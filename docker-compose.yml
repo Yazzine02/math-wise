@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: mathwise-postgres
+    environment:
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: 0
+      POSTGRES_DB: mathwise_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - mathwise-pg-data:/var/lib/postgresql/data # This guarantees persistent storage
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: mathwise-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mathwise.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+volumes:
+  mathwise-pg-data: # Declaring the named volume for consistent storage
