@@ -5,10 +5,7 @@ import com.mathwise.backend.dto.MathEvaluationRequestDto;
 import com.mathwise.backend.service.AiEvaluationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
 
 @Controller
 @RequestMapping("/api/exercises")
@@ -18,6 +15,11 @@ public class AiEvaluationController {
 
     public AiEvaluationController(AiEvaluationService aiEvaluationService){
         this.aiEvaluationService = aiEvaluationService;
+    }
+
+    @GetMapping("/hello")
+    public String test(){
+        return "index";
     }
 
     @PostMapping("/evaluate")
