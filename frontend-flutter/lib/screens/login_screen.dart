@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -28,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   if (error == null) {
     print("Login successful! Router will automatically redirect.");
-    // Notice we DO NOT use Navigator.push here! go_router handles it automatically.
+    context.go('/home');
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(error), backgroundColor: Colors.red),
@@ -63,6 +63,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _handleLogin,
                     child: Text('Login'),
                   ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => context.go('/register'),
+              child: const Text("Don't have an account? Register"),
+            ),
           ],
         ),
       ),

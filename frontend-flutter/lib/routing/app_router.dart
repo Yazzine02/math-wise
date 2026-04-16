@@ -1,7 +1,8 @@
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
-import '../screens/home_screen.dart'; // We will create a dummy screen for this next
+import '../screens/home_screen.dart'; 
+import '../screens/register_screen.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -19,8 +20,9 @@ class AppRouter {
 
       final bool isLoggedIn = authProvider.isAuthenticated;
       final bool isGoingToLogin = state.matchedLocation == '/login';
+      final bool isGoingToRegister = state.matchedLocation == '/register';
 
-      if (!isLoggedIn && !isGoingToLogin) {
+      if (!isLoggedIn && !isGoingToLogin && !isGoingToRegister) {
         return '/login'; // Kick to login
       }
 
@@ -36,6 +38,11 @@ class AppRouter {
         path: '/login',
         name: 'login',
         builder: (context, state) => LoginScreen(),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => const RegisterScreen(),
       ),
       GoRoute(
         path: '/home',
