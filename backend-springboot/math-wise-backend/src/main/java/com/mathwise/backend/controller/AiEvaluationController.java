@@ -4,10 +4,13 @@ import com.mathwise.backend.dto.AiFeedbackDto;
 import com.mathwise.backend.dto.MathEvaluationRequestDto;
 import com.mathwise.backend.service.AiEvaluationService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestBody;
 
-@Controller
+@RestController
 @RequestMapping("/api/exercises")
 @CrossOrigin(origins = "*")// Allow Flutter to call locally without CORS Errors
 public class AiEvaluationController {
@@ -15,11 +18,6 @@ public class AiEvaluationController {
 
     public AiEvaluationController(AiEvaluationService aiEvaluationService){
         this.aiEvaluationService = aiEvaluationService;
-    }
-
-    @GetMapping("/hello")
-    public String test(){
-        return "index";
     }
 
     @PostMapping("/evaluate")

@@ -80,7 +80,13 @@ class LocalModelAdapter(AIEngineAdapter):
 
 # ----FACTORY----
 def get_ai_adapter() -> AIEngineAdapter:
-    mode = os.getenv("AI_MODE").lower()
+    mode = os.getenv("AI_MODE")
+    if not mode:
+        raise RuntimeError(
+           "AI_MODE env var is required. Set it to 'local' or 'cloud' "
+           "(see ai-python/.env.example)."
+       )
+    mode = mode.strip().lower()
     if mode == "local":
         return LocalModelAdapter()
     return CloudAPIAdapter()
