@@ -35,21 +35,32 @@ public class BaseEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name="updated_at")
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive;
+    @Column(name = "is_active", nullable = false, columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private boolean isActive = true;
 
     // This is JPA entity lifecycle event management, see: https://www.baeldung.com/jpa-entity-lifecycle-events
+    // They should be protected, because we don't want to expose them to the public API, only to the subclasses and JPA by reflection
     @PrePersist
-    public void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+    protected void onCreate() {
+        // The onCreate method should respect what the demander wants
+        /*
+            Prefer additive defaults over unconditional overwrites. A default is "fill in what wasn't provided,
+            " not "ignore what was provided."
+         */
+        LocalDateTime now = LocalDateTime.now();
+        if (createdAt == null) {
+            this.createdAt = now;
+        }
+        if (updatedAt == null) {
+            this.updatedAt = now;
+        }
     }
 
     @PreUpdate
-    public void onUpdate() {
+    protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
     }
 
