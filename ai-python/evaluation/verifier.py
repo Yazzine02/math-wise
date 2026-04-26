@@ -2,7 +2,7 @@ from sympy import symbols, diff, integrate, simplify, oo
 from sympy.parsing.sympy_parser import parse_expr
 from fastapi import HTTPException
 
-from models.schemas import VerificationResult
+from models.shemas import VerificationResult
 
 # Symboles Sympy globaux
 x = symbols('x')
