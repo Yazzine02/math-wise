@@ -50,6 +50,9 @@ def _equivalent(expected, student) -> bool:
         simplify(expected - student) → 0  ✓
     """
     try:
+        # Cas spécial : infini — simplify(oo - oo) = nan pas 0
+        if expected == student:
+            return True
         return simplify(expected - student) == 0
     except Exception:
         return False
