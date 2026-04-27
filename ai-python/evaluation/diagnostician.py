@@ -41,17 +41,29 @@ Ne pas inventer un nœud qui n'existe pas dans la liste.
 
 {nodes_formatted}
 
---- INSTRUCTIONS ---
-Analyse l'erreur et identifie la lacune la plus probable.
-Réponds UNIQUEMENT avec un objet JSON valide, rien d'autre.
-Pas de texte avant, pas de texte après, pas de balises markdown.
-
+--- INSTRUCTIONS STRICTES ---
+1. Identifie à quelle étape précise l'étudiant s'est trompé
+2. Montre-lui le bon raisonnement étape par étape
+3. Termine par une phrase d'encouragement courte
+Réponds UNIQUEMENT avec ce JSON valide, rien d'autre avant ou après :
 Format attendu :
 {{
   "weakness_node_code": "<node_code parmi la liste ci-dessus>",
   "confidence": <nombre entre 0.0 et 1.0>,
-  "explanation": "<explication claire, encourageante, max 2 phrases, pour l'étudiant>"
-}}"""
+  "explanation": "<explication pédagogique>"
+}}
+
+L'explication doit :
+- Identifier directement l'étape précise où l'étudiant s'est trompé
+- Montrer le bon raisonnement complet étape par étape
+- Terminer par une courte phrase d'encouragement
+
+Exemple :
+"Tu as fait une erreur à la dernière étape. Voici le bon raisonnement : 
+2x + 3 = 7 → on soustrait 3 des deux côtés → 2x = 4 → on divise par 2 → x = 2. 
+Tu t'es arrêté trop tôt — relis cette étape et tu vas y arriver !"
+
+"""
 
 
 # ================================================================
