@@ -1,7 +1,7 @@
 import json
 from fastapi import HTTPException
 
-from models.schemas import VerificationResult, DiagnosisResult
+from models.shemas import VerificationResult, DiagnosisResult
 from adapters.ai_adapters import get_ai_adapter
 
 # ================================================================

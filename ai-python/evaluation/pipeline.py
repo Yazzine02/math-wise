@@ -1,4 +1,4 @@
-from models.schemas import EvaluationRequest, EvaluationResponse
+from models.shemas import EvaluationRequest, EvaluationResponse
 from evaluation.verifier import verify
 from evaluation.diagnostician import diagnose
 
