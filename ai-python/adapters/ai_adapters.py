@@ -24,6 +24,11 @@ class CloudAPIAdapter(AIEngineAdapter):
     def __init__(self):
         self.api_key = os.getenv("CLOUD_API_KEY")
         self.url = os.getenv("CLOUD_API_URI")
+        # Fail fast — ne pas envoyer "Bearer None" à l'API
+        if not self.api_key:
+            raise RuntimeError("CLOUD_API_KEY is not set in .env")
+        if not self.url:
+            raise RuntimeError("CLOUD_API_URI is not set in .env")
 
     def evaluate(self, prompt: str) -> dict:
         print("Evaluating using your Cloud API")
@@ -36,7 +41,9 @@ class CloudAPIAdapter(AIEngineAdapter):
             "messages": [{"role": "user", "content": prompt}],
         }
         try:
-            response = requests.post(self.url, headers=headers, json=payload)
+            response = requests.post(
+                self.url, headers=headers, json=payload, timeout=30
+            )
             data = response.json()
             return json.loads(data["choices"][0]["message"]["content"])
         except Exception as e:
@@ -57,7 +64,7 @@ class LocalModelAdapter(AIEngineAdapter):
             "format": "json",
         }
         try:
-            response = requests.post(self.url, json=payload)
+            response = requests.post(self.url, json=payload, timeout=120)
             data = response.json()
             return json.loads(data["response"])
         except Exception as e:
