@@ -4,6 +4,8 @@ from fastapi import HTTPException
 from models.shemas import VerificationResult, DiagnosisResult
 from adapters.ai_adapters import get_ai_adapter
 
+import logging
+
 # ================================================================
 # PROMPT
 # ================================================================
@@ -85,6 +87,10 @@ def _parse_llm_response(raw: dict, valid_codes: list[str]) -> DiagnosisResult:
 
         # Sécurité : le LLM a peut-être inventé un code qui n'existe pas
         if code not in valid_codes:
+            logging.warning(
+                f"LLM returned unknown node_code '{code}' — "
+                f"valid codes: {valid_codes}. Falling back to first node."
+            )
             # On prend le premier nœud valide plutôt que de planter
             code = valid_codes[0] if valid_codes else "UNKNOWN"
 
