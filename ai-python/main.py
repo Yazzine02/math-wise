@@ -1,117 +1,62 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 from dotenv import load_dotenv
-from abc import ABC, abstractmethod
-import requests
-import os
-import json
 
-# Loading environment variables using python-dotenv
+from models.shemas import EvaluationRequest, EvaluationResponse
+from evaluation.pipeline import evaluate
+
 load_dotenv()
 
 app = FastAPI(title="Math Wise AI Service")
 
 
-# ----DATA MODELS----
-class MathEvaluationRequest(BaseModel):
-    equation: str
-    correct_answer: str
-    student_answer: str
+# ================================================================
+# HEALTH CHECK
+# ================================================================
+
+@app.get("/health")
+def health():
+    """Vérifie que FastAPI tourne — appelé par Spring Boot au démarrage"""
+    return {"status": "ok"}
 
 
-# ----ADAPTER----
-# All adapters have to implement the evaluate_student_error method
-class AIEngineAdapter(ABC):
-    @abstractmethod
-    def evaluate(self, prompt: str) -> dict:
-        """Send prompt to Ai engine and return its JSON output"""
-        ...
+# ================================================================
+# ENDPOINT PRINCIPAL
+# Appelé par Spring Boot quand un étudiant soumet une réponse
+# ================================================================
 
-
-class CloudAPIAdapter(AIEngineAdapter):
-    """Adapter for online cloud API"""
-
-    def __init__(self):
-        # Use os directly thanks to load_dotenv, provided by python-dotenv depandency
-        self.api_key = os.getenv("CLOUD_API_KEY")
-        self.url = os.getenv("CLOUD_API_URI")
-
-    def evaluate(self, prompt: str) -> dict:
-        print("Evaluating using your Cloud API")
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": "fast-cloud-model",
-            "messages": [{"role": "user", "content": prompt}],
-        }
-        try:
-            response = requests.post(self.url, headers=headers, json=payload)
-            data = response.json()
-            return json.loads(data["choices"][0]["message"]["content"])
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Cloud API failed: {str(e)}")
-
-
-class LocalModelAdapter(AIEngineAdapter):
-    def __init__(self):
-        self.url = os.getenv("MODEL_URL")
-        self.model = os.getenv("MODEL_NAME")
-
-    def evaluate(self, prompt: str) -> dict:
-        print("Evaluating using LOCAL OLLAMA MODEL...")
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json",
-        }
-
-        try:
-            response = requests.post(self.url, json=payload)
-            data = response.json()
-            return json.loads(data["response"])
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail="Ensure Ollama is running locally. " + str(e)
-            )
-
-
-# ----FACTORY----
-def get_ai_adapter() -> AIEngineAdapter:
-    mode = os.getenv("AI_MODE", "").strip().lower()
-    if not mode:
-        raise RuntimeError(
-            "AI_MODE env var is required. Set it to 'local' or 'cloud' "
-            "(see ai-python/.env.example)."
-        )
-    if mode not in {"local", "cloud"}:
-        raise RuntimeError(
-            f"AI_MODE must be 'local' or 'cloud', got {mode!r}"
-        )
-    return LocalModelAdapter() if mode == "local" else CloudAPIAdapter()
-
-
-# ----FAST API ENDPOINTS----
-@app.post("/evaluate-error")
-def evaluate_student_error(request: MathEvaluationRequest):
-    # 1. Construct the strict prompt
-    system_prompt = f"""
-    You are an expert math tutor. Analyze the student's incorrect answer.
-    Equation: {request.equation}
-    Correct Answer: {request.correct_answer}
-    Student Answer: {request.student_answer}
-    
-    Return ONLY a JSON object with two keys: "weakness_node" (string) and "explanation" (string).
+@app.post("/evaluate", response_model=EvaluationResponse)
+def evaluate_student_answer(request: EvaluationRequest):
     """
+    Pipeline complet :
+      1. Sympy vérifie la réponse (déterministe)
+      2. LLM diagnostique la lacune (seulement si incorrect)
 
-    # 2. Get the active adapter (Cloud or Local based on .env)
-    ai_engine = get_ai_adapter()
+    Spring Boot envoie :
+      - equation       : la question posée
+      - student_answer : réponse de l'étudiant
+      - exercise_type  : "equation" | "derivative" | "integral" | "limit"
+      - expected_sympy : bonne réponse format Sympy (depuis la DB)
+      - sympy_context  : infos optionnelles pour Sympy
 
-    # 3. Process the request
+    Spring Boot reçoit :
+      - correct              : true / false
+      - weakness_node_code   : ex "DERIVATIVE_PRODUCT" (si incorrect)
+      - explanation          : explication pour l'étudiant (si incorrect)
+      - confidence           : niveau de confiance du LLM (si incorrect)
+    """
+    # TODO : récupérer les knowledge_nodes depuis la DB PostgreSQL
+    # Pour l'instant on utilise une liste statique pour tester
+    # Ce sera remplacé par un appel à la DB dans la prochaine itération
+    knowledge_nodes = [
+        {"node_code": "DERIVATIVE_PRODUCT", "title": "Dérivée d'un produit"},
+        {"node_code": "DERIVATIVE_CHAIN",   "title": "Dérivée par composition"},
+        {"node_code": "SOLVE_LINEAR_EQ",    "title": "Équation du 1er degré"},
+        {"node_code": "SOLVE_QUADRATIC_EQ", "title": "Équation du 2nd degré"},
+        {"node_code": "INTEGRAL_BASIC",     "title": "Intégrale de base"},
+        {"node_code": "LIMIT_BASIC",        "title": "Limite de base"},
+    ]
+
     try:
-        result_json = ai_engine.evaluate(system_prompt)
-        return result_json
+        return evaluate(request, knowledge_nodes)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
