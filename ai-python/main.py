@@ -58,5 +58,7 @@ def evaluate_student_answer(request: EvaluationRequest):
 
     try:
         return evaluate(request, knowledge_nodes)
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
