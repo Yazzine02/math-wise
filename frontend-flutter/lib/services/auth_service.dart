@@ -20,15 +20,12 @@ class AuthService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token = data['token'];
-        
-        // Save the token 
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', token);
-        
-        return null; // Null means success
+        await prefs.setString('jwt_token', data['token']);
+        await prefs.setString('display_name', data['display_name'] ?? '');
+        return null;
       } else {
-        return response.body; // Returns the error message from Spring Boot
+        return response.body;
       }
     } catch (e) {
       return 'Network error: Could not connect to server.';
@@ -44,20 +41,18 @@ class AuthService {
         body: jsonEncode({
           'email': email,
           'password': password,
-          'display_name': displayName, // Matches @JsonProperty in Java
+          'display_name': displayName,
         }),
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final token = data['token'];
-        
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('jwt_token', token);
-        
-        return null; // Success
+        await prefs.setString('jwt_token', data['token']);
+        await prefs.setString('display_name', data['display_name'] ?? displayName);
+        return null;
       } else {
-        return response.body; 
+        return response.body;
       }
     } catch (e) {
       return 'Network error: Could not connect to server.';
@@ -68,5 +63,6 @@ class AuthService {
   static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    await prefs.remove('display_name');
   }
 }

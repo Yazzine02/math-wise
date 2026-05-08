@@ -11,7 +11,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - mathwise-pg-data:/var/lib/postgresql/data # This guarantees persistent storage
+      - mathwise-pg-data:/var/lib/postgresql/data
     restart: unless-stopped
 
   pgadmin:
@@ -26,5 +26,29 @@ services:
       - postgres
     restart: unless-stopped
 
+  ollama:
+    image: ollama/ollama
+    container_name: mathwise-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - mathwise-ollama-data:/root/.ollama
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: ./ai-python
+    container_name: mathwise-ai
+    environment:
+      AI_MODE: local
+      MODEL_URL: http://ollama:11434
+      MODEL_NAME: llama3.2:3b
+    ports:
+      - "8000:8000"
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
 volumes:
-  mathwise-pg-data: # Declaring the named volume for consistent storage
+  mathwise-pg-data:
+  mathwise-ollama-data:

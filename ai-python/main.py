@@ -51,7 +51,7 @@ class LocalModelAdapter(AIEngineAdapter):
         self.url=os.getenv("MODEL_URL")
         self.model=os.getenv("MODEL_NAME")
     
-    def evaluate_error(self, prompt: str) -> dict:
+    def evaluate_student_error(self, prompt: str) -> dict:
         print("Evaluating using LOCAL OLLAMA MODEL...")
         payload = {
             "model": self.model,
@@ -59,9 +59,8 @@ class LocalModelAdapter(AIEngineAdapter):
             "stream": False,
             "format": "json"
         }
-        
         try:
-            response = requests.post(self.url, json=payload)
+            response = requests.post(f"{self.url}/api/generate", json=payload)
             data = response.json()
             return json.loads(data['response'])
         except Exception as e:
@@ -92,7 +91,7 @@ def evaluate_student_error(request: MathEvaluationRequest):
     
     # 3. Process the request
     try:
-        result_json = ai_engine.evaluate_error(system_prompt)
+        result_json = ai_engine.evaluate_student_error(system_prompt)
         return result_json
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
