@@ -47,18 +47,31 @@ public class StudentProgressService {
     }
 
     public ExerciseDto getNextExercise(UUID studentId) {
-        List<Object[]> weaknesses = interactionLogRepository.findTopWeaknessesByStudentId(studentId);
+        return getNextExercise(studentId, null);
+    }
 
+    /**
+     * If {@code nodeCode} is provided, returns a random exercise from that specific node
+     * (used when the student is practising a specific course topic).
+     * If null, falls back to adaptive selection based on weakness history.
+     */
+    public ExerciseDto getNextExercise(UUID studentId, String nodeCode) {
         KnowledgeNode targetNode = null;
-        if (!weaknesses.isEmpty()) {
-            String weakestCode = (String) weaknesses.get(0)[0];
-            targetNode = knowledgeNodeRepository.findByNodeCode(weakestCode).orElse(null);
-        }
 
-        if (targetNode == null) {
-            List<KnowledgeNode> allNodes = knowledgeNodeRepository.findAll();
-            if (allNodes.isEmpty()) throw new IllegalStateException("No knowledge nodes seeded.");
-            targetNode = allNodes.get(random.nextInt(allNodes.size()));
+        if (nodeCode != null && !nodeCode.isBlank()) {
+            targetNode = knowledgeNodeRepository.findByNodeCode(nodeCode)
+                    .orElseThrow(() -> new IllegalArgumentException("Unknown node code: " + nodeCode));
+        } else {
+            List<Object[]> weaknesses = interactionLogRepository.findTopWeaknessesByStudentId(studentId);
+            if (!weaknesses.isEmpty()) {
+                String weakestCode = (String) weaknesses.get(0)[0];
+                targetNode = knowledgeNodeRepository.findByNodeCode(weakestCode).orElse(null);
+            }
+            if (targetNode == null) {
+                List<KnowledgeNode> allNodes = knowledgeNodeRepository.findAll();
+                if (allNodes.isEmpty()) throw new IllegalStateException("No knowledge nodes seeded.");
+                targetNode = allNodes.get(random.nextInt(allNodes.size()));
+            }
         }
 
         List<Exercise> exercises = exerciseRepository.findByKnowledgeNode(targetNode);

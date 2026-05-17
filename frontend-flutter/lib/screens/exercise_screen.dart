@@ -5,7 +5,12 @@ import '../models/ai_feedback.dart';
 import '../services/exercise_service.dart';
 
 class ExerciseScreen extends StatefulWidget {
-  const ExerciseScreen({super.key});
+  /// If provided, the screen pulls exercises only from this specific knowledge node
+  /// (used when launched from a course's "Practice" button). When null, the backend
+  /// serves an adaptive exercise based on the student's weakness history.
+  final String? nodeCode;
+
+  const ExerciseScreen({super.key, this.nodeCode});
 
   @override
   State<ExerciseScreen> createState() => _ExerciseScreenState();
@@ -33,7 +38,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Future<void> _loadExercise() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final exercise = await ExerciseService.getNextExercise();
+      final exercise = await ExerciseService.getNextExercise(nodeCode: widget.nodeCode);
       if (mounted) setState(() { _exercise = exercise; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });

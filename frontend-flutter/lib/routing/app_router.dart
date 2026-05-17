@@ -5,6 +5,8 @@ import '../screens/home_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/exercise_screen.dart';
 import '../screens/feedback_screen.dart';
+import '../screens/courses_screen.dart';
+import '../screens/lesson_screen.dart';
 import '../models/ai_feedback.dart';
 
 class AppRouter {
@@ -55,12 +57,26 @@ class AppRouter {
       GoRoute(
         path: '/exercise',
         name: 'exercise',
-        builder: (context, state) => const ExerciseScreen(),
+        builder: (context, state) => ExerciseScreen(
+          nodeCode: state.uri.queryParameters['nodeCode'],
+        ),
       ),
       GoRoute(
         path: '/feedback',
         name: 'feedback',
         builder: (context, state) => FeedbackScreen(feedback: state.extra as AiFeedback),
+      ),
+      GoRoute(
+        path: '/courses',
+        name: 'courses',
+        builder: (context, state) => const CoursesScreen(),
+      ),
+      GoRoute(
+        path: '/courses/:nodeCode',
+        name: 'lesson',
+        builder: (context, state) => LessonScreen(
+          nodeCode: state.pathParameters['nodeCode']!,
+        ),
       ),
     ],
   );

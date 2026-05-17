@@ -4,8 +4,13 @@ import '../models/ai_feedback.dart';
 import 'api_client.dart';
 
 class ExerciseService {
-  static Future<Exercise> getNextExercise() async {
-    final response = await ApiClient.get('/api/student/next-exercise');
+  /// If [nodeCode] is provided, fetches an exercise specifically from that knowledge
+  /// node (used after a lesson). Otherwise the backend serves an adaptive exercise.
+  static Future<Exercise> getNextExercise({String? nodeCode}) async {
+    final path = (nodeCode == null || nodeCode.isEmpty)
+        ? '/api/student/next-exercise'
+        : '/api/student/next-exercise?node_code=${Uri.encodeQueryComponent(nodeCode)}';
+    final response = await ApiClient.get(path);
     if (response.statusCode == 200) {
       return Exercise.fromJson(jsonDecode(response.body));
     }
