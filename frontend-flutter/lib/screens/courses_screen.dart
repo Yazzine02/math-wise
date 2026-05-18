@@ -1,7 +1,16 @@
+// lib/screens/courses_screen.dart
+//
+// List of all available courses. Pulls from CourseService. Cards mirror the
+// design mockups: title row + Lvl badge, 3-line intro clamp, min-read +
+// "Start lesson →" footer.
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../models/course.dart';
 import '../services/course_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -20,61 +29,76 @@ class _CoursesScreenState extends State<CoursesScreen> {
   }
 
   Future<void> _refresh() async {
-    setState(() {
-      _coursesFuture = CourseService.listCourses();
-    });
+    setState(() => _coursesFuture = CourseService.listCourses());
     await _coursesFuture;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Courses')),
-      body: RefreshIndicator(
+    return MwScaffold(
+      child: RefreshIndicator(
+        color: AppColors.lime,
+        backgroundColor: AppColors.surface,
         onRefresh: _refresh,
         child: FutureBuilder<List<Course>>(
           future: _coursesFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) {
-              return ListView(
-                children: [
-                  const SizedBox(height: 200),
-                  Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          Text(
-                            'Failed to load courses',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${snapshot.error}',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(onPressed: _refresh, child: const Text('Retry')),
-                        ],
+          builder: (context, snap) {
+            return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+              children: [
+                // ─── Header ───────────────────────────────────────────
+                Row(
+                  children: [
+                    MwIconButton(icon: Icons.arrow_back_rounded, onPressed: () => context.pop()),
+                    const SizedBox(width: 10),
+                    Text('Courses',
+                        style: AppText.display(size: 22, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.6)),
+                    const Spacer(),
+                    if (snap.hasData)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          border: Border.all(color: AppColors.line),
+                          borderRadius: BorderRadius.circular(AppRadii.pill),
+                        ),
+                        child: Text(
+                          '${snap.data!.length} TOPICS',
+                          style: AppText.label(size: 10, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
+                        ),
                       ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Bite-sized lessons explaining each concept before you practice it.',
+                  style: AppText.body(size: 12, color: AppColors.muted),
+                ),
+                const SizedBox(height: 18),
+
+                // ─── Body ─────────────────────────────────────────────
+                if (snap.connectionState == ConnectionState.waiting)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (snap.hasError)
+                  _ErrorBlock(message: '${snap.error}', onRetry: _refresh)
+                else if ((snap.data ?? []).isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40),
+                    child: Center(
+                      child: Text('No courses available yet.',
+                          style: AppText.body(size: 14, color: AppColors.muted)),
                     ),
-                  ),
-                ],
-              );
-            }
-            final courses = snapshot.data ?? [];
-            if (courses.isEmpty) {
-              return const Center(child: Text('No courses available yet.'));
-            }
-            return ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: courses.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => _CourseCard(course: courses[i]),
+                  )
+                else
+                  ...snap.data!.map((c) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _CourseCard(course: c),
+                      )),
+              ],
             );
           },
         ),
@@ -89,51 +113,52 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
       child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         onTap: () => context.push('/courses/${course.nodeCode}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.line),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Text(
                       course.nodeTitle,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                      style: AppText.display(size: 17, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
                     ),
                   ),
-                  _DifficultyBadge(level: course.difficultyLevel),
+                  const SizedBox(width: 10),
+                  MwDifficultyBadge(level: course.difficultyLevel),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Text(
                 course.intro,
-                style: Theme.of(context).textTheme.bodyMedium,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
+                style: AppText.body(size: 12, color: AppColors.inkSoft, height: 1.5),
               ),
               const SizedBox(height: 12),
+              const Divider(height: 1, color: AppColors.line),
+              const SizedBox(height: 10),
               Row(
                 children: [
-                  Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    '~${course.estimatedMinutes} min read',
-                    style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
-                  ),
+                  MwReadTime(minutes: course.estimatedMinutes),
                   const Spacer(),
-                  Text(
-                    'Start lesson',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward, size: 16, color: Theme.of(context).colorScheme.primary),
+                  Text('Start lesson',
+                      style: AppText.title(size: 12, weight: FontWeight.w800, color: AppColors.lime)),
+                  const SizedBox(width: 4),
+                  const Icon(Icons.arrow_forward, size: 14, color: AppColors.lime),
                 ],
               ),
             ],
@@ -144,24 +169,33 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
-class _DifficultyBadge extends StatelessWidget {
-  final int level;
-  const _DifficultyBadge({required this.level});
+class _ErrorBlock extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+  const _ErrorBlock({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    final colors = {1: Colors.green, 2: Colors.green, 3: Colors.orange, 4: Colors.deepOrange, 5: Colors.red};
-    final color = colors[level] ?? Colors.grey;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color),
+        color: AppColors.pink.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
       ),
-      child: Text(
-        'Lvl $level',
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Failed to load courses', style: AppText.title(size: 14, color: AppColors.pink)),
+          const SizedBox(height: 6),
+          Text(message, style: AppText.body(size: 12, color: AppColors.pink)),
+          const SizedBox(height: 10),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(foregroundColor: AppColors.lime),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }

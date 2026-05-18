@@ -1,9 +1,27 @@
+// lib/main.dart — UPDATED for the "Bold Playful (dark)" design.
+//
+// Changes vs the feature/courses branch:
+//   • Imports buildAppTheme() from `theme/app_theme.dart`
+//   • Sets system UI overlay to dark navy
+//   • Switches MaterialApp.theme → buildAppTheme()
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+
 import 'providers/auth_provider.dart';
 import 'routing/app_router.dart';
+import 'theme/app_theme.dart';
 
 void main() {
+  // Make the system status bar transparent and use light icons so it sits
+  // cleanly on top of the dark navy background.
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarColor: AppColors.bg,
+    systemNavigationBarIconBrightness: Brightness.light,
+  ));
   runApp(const MathWiseApp());
 }
 
@@ -14,27 +32,19 @@ class MathWiseApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // 1. Provide the Auth State to the whole app
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        
-        // 2. Provide the Router, passing it the AuthProvider so it can guard routes
         ProxyProvider<AuthProvider, AppRouter>(
           update: (context, authProvider, previous) => AppRouter(authProvider),
         ),
       ],
       child: Builder(
         builder: (context) {
-          // Grab the router
           final goRouter = context.read<AppRouter>().router;
-
           return MaterialApp.router(
             title: 'Math Wise',
             debugShowCheckedModeBanner: false,
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-              useMaterial3: true,
-            ),
-            routerConfig: goRouter, // Use go_router
+            theme: buildAppTheme(),
+            routerConfig: goRouter,
           );
         },
       ),

@@ -1,7 +1,15 @@
+// lib/screens/lesson_screen.dart
+//
+// Lesson detail. Sections: intro callout · The concept · Worked examples
+// (monospace JetBrains Mono cards) · Pro tip · Practice CTA.
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../models/lesson.dart';
 import '../services/course_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 
 class LessonScreen extends StatefulWidget {
   final String nodeCode;
@@ -12,34 +20,33 @@ class LessonScreen extends StatefulWidget {
 }
 
 class _LessonScreenState extends State<LessonScreen> {
-  late Future<Lesson> _lessonFuture;
+  late Future<Lesson> _future;
 
   @override
   void initState() {
     super.initState();
-    _lessonFuture = CourseService.getLesson(widget.nodeCode);
+    _future = CourseService.getLesson(widget.nodeCode);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lesson')),
-      body: FutureBuilder<Lesson>(
-        future: _lessonFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+    return MwScaffold(
+      child: FutureBuilder<Lesson>(
+        future: _future,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
+          if (snap.hasError) {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text('Failed to load lesson: ${snapshot.error}', textAlign: TextAlign.center),
+                child: Text('Failed to load lesson: ${snap.error}',
+                    textAlign: TextAlign.center, style: AppText.body(color: AppColors.pink)),
               ),
             );
           }
-          final lesson = snapshot.data!;
-          return _LessonBody(lesson: lesson);
+          return _LessonBody(lesson: snap.data!);
         },
       ),
     );
@@ -52,103 +59,106 @@ class _LessonBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Text(lesson.nodeTitle, style: theme.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text('~${lesson.estimatedMinutes} min read',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-              const SizedBox(width: 16),
-              Icon(Icons.trending_up, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text('Difficulty ${lesson.difficultyLevel}',
-                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-            ],
-          ),
-          const SizedBox(height: 24),
-
-          // Intro callout
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withValues(alpha: 0.4),
-              borderRadius: BorderRadius.circular(12),
-              border: Border(left: BorderSide(color: theme.colorScheme.primary, width: 4)),
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+      children: [
+        // ─── Top bar ─────────────────────────────────────────────────
+        Row(
+          children: [
+            MwIconButton(icon: Icons.arrow_back_rounded, onPressed: () => context.pop()),
+            const SizedBox(width: 10),
+            Text(
+              'LESSON',
+              style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
             ),
-            child: Text(
-              lesson.intro,
-              style: theme.textTheme.bodyLarge?.copyWith(fontStyle: FontStyle.italic, height: 1.4),
-            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // ─── Title + meta ───────────────────────────────────────────
+        Text(
+          lesson.nodeTitle,
+          style: AppText.display(size: 26, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            MwDifficultyBadge(level: lesson.difficultyLevel),
+            const SizedBox(width: 10),
+            MwReadTime(minutes: lesson.estimatedMinutes),
+          ],
+        ),
+
+        // ─── Intro callout ──────────────────────────────────────────
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.lime.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: const Border(left: BorderSide(color: AppColors.lime, width: 3)),
           ),
-          const SizedBox(height: 28),
-
-          // Theory section
-          _SectionTitle(icon: Icons.menu_book, title: 'The Concept'),
-          const SizedBox(height: 8),
-          Text(lesson.theory, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
-          const SizedBox(height: 28),
-
-          // Examples section
-          _SectionTitle(icon: Icons.lightbulb_outline, title: 'Worked Examples'),
-          const SizedBox(height: 12),
-          ...List.generate(lesson.examples.length, (i) => _ExampleCard(index: i + 1, body: lesson.examples[i])),
-          const SizedBox(height: 28),
-
-          // Tip section
-          _SectionTitle(icon: Icons.tips_and_updates, title: 'Pro Tip'),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.amber.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.amber.shade200),
-            ),
-            child: Text(lesson.tip, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5)),
+          child: Text(
+            lesson.intro,
+            style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.5)
+                .copyWith(fontStyle: FontStyle.italic),
           ),
-          const SizedBox(height: 36),
+        ),
 
-          // Practice CTA
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              icon: const Icon(Icons.play_arrow),
-              label: Text('Practice ${lesson.nodeTitle}'),
-              style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              onPressed: () => context.push('/exercise?nodeCode=${lesson.nodeCode}'),
-            ),
+        // ─── The concept ────────────────────────────────────────────
+        const SizedBox(height: 22),
+        const _SectionHeader(icon: Icons.menu_book_rounded, title: 'The concept', tint: AppColors.lime),
+        const SizedBox(height: 8),
+        Text(lesson.theory, style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.6)),
+
+        // ─── Worked examples ────────────────────────────────────────
+        const SizedBox(height: 22),
+        const _SectionHeader(icon: Icons.auto_awesome_outlined, title: 'Worked examples', tint: AppColors.lime),
+        const SizedBox(height: 10),
+        ...List.generate(lesson.examples.length, (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _ExampleCard(index: i + 1, body: lesson.examples[i]),
+            )),
+
+        // ─── Pro tip ────────────────────────────────────────────────
+        const SizedBox(height: 12),
+        const _SectionHeader(icon: Icons.bolt_rounded, title: 'Pro tip', tint: AppColors.pink),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: AppColors.pink.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.pink.withValues(alpha: 0.25)),
           ),
-          const SizedBox(height: 16),
-        ],
-      ),
+          child: Text(lesson.tip, style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.55)),
+        ),
+
+        // ─── Practice CTA ───────────────────────────────────────────
+        const SizedBox(height: 24),
+        MwButton(
+          label: 'Practice  ${lesson.nodeTitle}',
+          icon: Icons.play_arrow_rounded,
+          onPressed: () => context.pushNamed('exercise', queryParameters: {'nodeCode': lesson.nodeCode}),
+        ),
+      ],
     );
   }
 }
 
-class _SectionTitle extends StatelessWidget {
+class _SectionHeader extends StatelessWidget {
   final IconData icon;
   final String title;
-  const _SectionTitle({required this.icon, required this.title});
+  final Color tint;
+  const _SectionHeader({required this.icon, required this.title, required this.tint});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 22, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 18, color: tint),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        Text(title, style: AppText.title(size: 15, weight: FontWeight.w800, color: AppColors.ink)),
       ],
     );
   }
@@ -162,32 +172,29 @@ class _ExampleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
+        color: AppColors.bgDeep,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.line),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
-              borderRadius: BorderRadius.circular(8),
+              color: AppColors.lime,
+              borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              'Example $index',
-              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+              'EXAMPLE $index',
+              style: AppText.title(size: 10, weight: FontWeight.w800, color: AppColors.bgDeep)
+                  .copyWith(letterSpacing: 1),
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            body,
-            style: const TextStyle(fontFamily: 'monospace', height: 1.5, fontSize: 13.5),
-          ),
+          Text(body, style: AppText.mono(size: 12.5, color: AppColors.inkSoft, height: 1.6)),
         ],
       ),
     );

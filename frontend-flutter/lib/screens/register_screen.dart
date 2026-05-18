@@ -1,57 +1,27 @@
 // lib/screens/register_screen.dart
+//
+// Redesigned registration. Uses the existing AuthService directly (matches
+// the current branch's behaviour — token is stored, then we redirect to /home).
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../services/auth_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
+import '../widgets/mw_wordmark.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
-
-  void _handleRegister() async {
-    // Basic validation
-    if (_displayNameController.text.isEmpty || 
-        _emailController.text.isEmpty || 
-        _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields'), backgroundColor: Colors.orange),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    
-    // Call your static AuthService
-    final error = await AuthService.register(
-      _emailController.text.trim(),
-      _passwordController.text.trim(),
-      _displayNameController.text.trim(),
-    );
-
-    setState(() => _isLoading = false);
-
-    // If the widget was unmounted during the network request, abort
-    if (!mounted) return;
-
-    if (error == null) {
-      print("Registration successful! Token saved.");
-      // Navigate to home since they are now authenticated
-      context.go('/home'); 
-    } else {
-      // Show Spring Boot's error message (e.g., "Email is already registered")
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error), backgroundColor: Colors.red),
-      );
-    }
-  }
+  bool _loading = false;
 
   @override
   void dispose() {
@@ -61,45 +31,103 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _register() async {
+    if (_displayNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill in all fields'), backgroundColor: AppColors.diff3),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
+    final error = await AuthService.register(
+      _emailController.text.trim(),
+      _passwordController.text.trim(),
+      _displayNameController.text.trim(),
+    );
+
+    if (!mounted) return;
+    setState(() => _loading = false);
+
+    if (error == null) {
+      context.go('/home');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: AppColors.pink),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Create Math Wise Account')),
-      body: SingleChildScrollView( // Prevents pixel overflow when keyboard pops up
-        padding: const EdgeInsets.all(16.0),
+    return MwScaffold(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 40),
-            TextField(
+            Row(
+              children: [
+                const MwWordmark(size: 16),
+                const Spacer(),
+                Text('1 of 1', style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.muted)),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            Text(
+              'CREATE YOUR PROFILE',
+              style: AppText.label(weight: FontWeight.w700, color: AppColors.lime, letterSpacing: 1.5),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'What should we',
+              style: AppText.display(size: 28, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
+            ),
+            Text(
+              'call you?',
+              style: AppText.display(size: 28, weight: FontWeight.w800, color: AppColors.lime, letterSpacing: -0.8),
+            ),
+
+            const SizedBox(height: 22),
+            MwField(
+              label: 'Display name',
               controller: _displayNameController,
-              decoration: const InputDecoration(labelText: 'Display Name'),
               textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.next,
             ),
-            const SizedBox(height: 16),
-            TextField(
+            const SizedBox(height: 14),
+            MwField(
+              label: 'Email',
               controller: _emailController,
-              decoration: const InputDecoration(labelText: 'Email'),
               keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
             ),
-            const SizedBox(height: 16),
-            TextField(
+            const SizedBox(height: 14),
+            MwField(
+              label: 'Password',
               controller: _passwordController,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
+              obscure: true,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => _register(),
             ),
-            const SizedBox(height: 32),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : ElevatedButton(
-                    onPressed: _handleRegister,
-                    child: const Text('Register'),
+
+            const SizedBox(height: 28),
+            MwButton(label: 'Continue  →', onPressed: _register, loading: _loading),
+
+            const SizedBox(height: 18),
+            Center(
+              child: Wrap(
+                children: [
+                  Text('Already have an account? ', style: AppText.body(size: 13, color: AppColors.muted)),
+                  GestureDetector(
+                    onTap: () => context.go('/login'),
+                    child: Text('Sign in', style: AppText.body(size: 13, weight: FontWeight.w700, color: AppColors.lime)),
                   ),
-            const SizedBox(height: 16),
-            // Button to navigate back to login
-            TextButton(
-              onPressed: () => context.go('/login'),
-              child: const Text("Already have an account? Login here"),
+                ],
+              ),
             ),
           ],
         ),

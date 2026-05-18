@@ -20,16 +20,19 @@ public class AiEvaluationService {
     private final RestTemplate restTemplate;
     private final InteractionLogRepository interactionLogRepository;
     private final KnowledgeNodeRepository knowledgeNodeRepository;
+    private final KnowledgeNodeResolver nodeResolver;
 
     @Value("${ai-service.url}")
     private String aiServiceUrl;
 
     public AiEvaluationService(RestTemplate restTemplate,
                                 InteractionLogRepository interactionLogRepository,
-                                KnowledgeNodeRepository knowledgeNodeRepository) {
+                                KnowledgeNodeRepository knowledgeNodeRepository,
+                                KnowledgeNodeResolver nodeResolver) {
         this.restTemplate = restTemplate;
         this.interactionLogRepository = interactionLogRepository;
         this.knowledgeNodeRepository = knowledgeNodeRepository;
+        this.nodeResolver = nodeResolver;
     }
 
     public AiFeedbackDto evaluateStudentAnswer(EvaluateAnswerRequestDto requestDto) {
@@ -57,8 +60,22 @@ public class AiEvaluationService {
         log.setCorrect(isCorrect);
         log.setActive(true);
         if (feedback != null && !isCorrect) {
-            log.setAiIdentifiedWeaknessCode(feedback.getWeakness_node());
+            // The LLM frequently returns a human-readable title ("Multiplication")
+            // rather than the canonical code ("ARITH_MULTIPLICATION"). Normalise
+            // here so every row written to interaction_logs is queryable later.
+            // If we cannot resolve it at all we fall back to the tested node — at
+            // least the weakness is attributed to a known concept rather than to
+            // a free-form string the adaptive query can never match.
+            String raw = feedback.getWeakness_node();
+            String canonical = nodeResolver.resolve(raw)
+                    .map(KnowledgeNode::getNodeCode)
+                    .orElse(testedNode.getNodeCode());
+            log.setAiIdentifiedWeaknessCode(canonical);
             log.setAiExplanation(feedback.getExplanation());
+
+            // Also rewrite the response so the Flutter client receives the
+            // canonical code on the feedback screen.
+            feedback.setWeakness_node(canonical);
         }
         interactionLogRepository.save(log);
 

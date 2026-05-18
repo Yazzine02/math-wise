@@ -1,9 +1,20 @@
+// lib/screens/home_screen.dart
+//
+// Dashboard. Matches the layout from the design mockups, with XP / streak /
+// level deliberately OMITTED — those will be added when the XP feature is
+// wired into the backend. Search for `XP_PLACEHOLDER` to find the spot
+// where the level/streak chip should go later.
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
 import '../models/weakness_summary.dart';
 import '../services/progress_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
+import '../widgets/mw_wordmark.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,14 +31,14 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProgress();
+    _load();
   }
 
-  Future<void> _loadProgress() async {
+  Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final summary = await ProgressService.getWeaknesses();
-      if (mounted) setState(() { _summary = summary; _loading = false; });
+      final s = await ProgressService.getWeaknesses();
+      if (mounted) setState(() { _summary = s; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
@@ -36,69 +47,154 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final displayName = context.watch<AuthProvider>().displayName;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Math Wise'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () => context.read<AuthProvider>().logout(),
-          ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadProgress,
-        child: SingleChildScrollView(
+    return MwScaffold(
+      child: RefreshIndicator(
+        color: AppColors.lime,
+        backgroundColor: AppColors.surface,
+        onRefresh: _load,
+        child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          children: [
+            // ─── Header ───────────────────────────────────────────────
+            Row(
+              children: [
+                const MwWordmark(size: 16),
+                const Spacer(),
+                // XP_PLACEHOLDER — replace with a streak/XP chip once
+                // the backend exposes them. For now a plain logout button.
+                MwIconButton(
+                  icon: Icons.logout_rounded,
+                  tooltip: 'Logout',
+                  onPressed: () => context.read<AuthProvider>().logout(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 22),
+
+            // ─── Greeting ─────────────────────────────────────────────
+            Text(
+              displayName.isEmpty ? 'Hello!' : 'Hi, $displayName!',
+              style: AppText.display(size: 26, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ready to practice some math?',
+              style: AppText.body(size: 14, color: AppColors.muted),
+            ),
+
+            const SizedBox(height: 20),
+
+            // ─── Primary CTA — adaptive practice ──────────────────────
+            _PracticeCard(onTap: () => context.push('/exercise')),
+
+            const SizedBox(height: 10),
+
+            // ─── Secondary CTA — browse courses ──────────────────────
+            _BrowseCoursesCard(onTap: () => context.push('/courses')),
+
+            const SizedBox(height: 28),
+
+            // ─── Weak areas ─────────────────────────────────────────
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('Your weak areas',
+                    style: AppText.title(size: 15, weight: FontWeight.w800, color: AppColors.ink)),
+                const Spacer(),
+                Text('AI-DIAGNOSED',
+                    style: AppText.label(size: 10, weight: FontWeight.w700, color: AppColors.lime, letterSpacing: 1.2)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_error != null)
+              _ErrorBlock(message: _error!, onRetry: _load)
+            else if (_summary == null || _summary!.weaknesses.isEmpty)
+              const _EmptyWeaknessBlock()
+            else
+              ..._summary!.weaknesses.asMap().entries.map((entry) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _WeaknessTile(entry: entry.value, index: entry.key),
+                  )),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+class _PracticeCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PracticeCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppRadii.xl),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.xl),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.xl),
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.lime, AppColors.cyan],
+            ),
+          ),
+          child: Stack(
+            clipBehavior: Clip.hardEdge,
             children: [
-              Text(
-                displayName.isNotEmpty ? 'Hello, $displayName!' : 'Hello!',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Ready to practice some math?',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.play_arrow),
-                  label: const Text('Start Practice'),
-                  style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                  onPressed: () => context.push('/exercise'),
+              // Decorative oversized π
+              Positioned(
+                right: -10, bottom: -30,
+                child: Opacity(
+                  opacity: 0.18,
+                  child: Text(
+                    'π',
+                    style: AppText.display(size: 120, weight: FontWeight.w800, color: AppColors.bgDeep, letterSpacing: -3),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  icon: const Icon(Icons.menu_book),
-                  label: const Text('Browse Courses'),
-                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-                  onPressed: () => context.push('/courses'),
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'ADAPTIVE PRACTICE · TUNED TO YOU',
+                    style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.bgDeep.withValues(alpha: 0.7), letterSpacing: 1.5),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Start practice',
+                    style: AppText.display(size: 22, weight: FontWeight.w800, color: AppColors.bgDeep, letterSpacing: -0.5),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgDeep,
+                      borderRadius: BorderRadius.circular(AppRadii.pill),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.play_arrow_rounded, size: 16, color: AppColors.lime),
+                        const SizedBox(width: 4),
+                        Text('Begin', style: AppText.title(size: 13, weight: FontWeight.w800, color: AppColors.lime)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 40),
-              Text(
-                'Your Weak Areas',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              if (_loading)
-                const Center(child: CircularProgressIndicator())
-              else if (_error != null)
-                _ErrorCard(message: _error!, onRetry: _loadProgress)
-              else if (_summary == null || _summary!.weaknesses.isEmpty)
-                const _EmptyWeaknessCard()
-              else
-                ..._summary!.weaknesses.map((w) => _WeaknessCard(entry: w)),
             ],
           ),
         ),
@@ -107,51 +203,138 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _WeaknessCard extends StatelessWidget {
-  final WeaknessEntry entry;
-  const _WeaknessCard({required this.entry});
+class _BrowseCoursesCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _BrowseCoursesCard({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.errorContainer,
-          child: Text(
-            '${entry.failureCount}',
-            style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontWeight: FontWeight.bold),
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.line, width: 1.5),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.bgDeep,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  border: Border.all(color: AppColors.violet, width: 1.5),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.menu_book_rounded, size: 18, color: AppColors.violet),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Browse courses',
+                        style: AppText.title(size: 14, weight: FontWeight.w700, color: AppColors.ink)),
+                    const SizedBox(height: 2),
+                    Text('8 concepts · learn before you practice',
+                        style: AppText.body(size: 11, color: AppColors.muted)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.muted, size: 22),
+            ],
           ),
         ),
-        title: Text(entry.nodeTitle, style: const TextStyle(fontWeight: FontWeight.w600)),
-        subtitle: Text('${entry.failureCount} mistake${entry.failureCount == 1 ? '' : 's'} identified'),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-        onTap: () => context.push('/exercise'),
       ),
     );
   }
 }
 
-class _EmptyWeaknessCard extends StatelessWidget {
-  const _EmptyWeaknessCard();
+class _WeaknessTile extends StatelessWidget {
+  final WeaknessEntry entry;
+  final int index;
+  const _WeaknessTile({required this.entry, required this.index});
+
+  static const _tones = [AppColors.pink, AppColors.violet, AppColors.cyan];
+  static const _glyphs = ['×', '½', '÷'];
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _tones[index % _tones.length];
+    final glyph = _glyphs[index % _glyphs.length];
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        onTap: () => context.pushNamed('exercise', queryParameters: {'nodeCode': entry.nodeCode}),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            border: Border.all(color: AppColors.line),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: tone,
+                  borderRadius: BorderRadius.circular(AppRadii.md),
+                  boxShadow: [BoxShadow(color: tone.withValues(alpha: 0.6), blurRadius: 18, spreadRadius: -4)],
+                ),
+                alignment: Alignment.center,
+                child: Text(glyph,
+                    style: AppText.display(size: 22, weight: FontWeight.w800, color: AppColors.bgDeep, letterSpacing: -0.5)),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(entry.nodeTitle,
+                        style: AppText.title(size: 14, weight: FontWeight.w700, color: AppColors.ink),
+                        maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 2),
+                    Text('${entry.failureCount} mistake${entry.failureCount == 1 ? '' : 's'}',
+                        style: AppText.body(size: 11, color: AppColors.muted)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.muted, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyWeaknessBlock extends StatelessWidget {
+  const _EmptyWeaknessBlock();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.green.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.green.shade200),
+        color: AppColors.lime.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.lime.withValues(alpha: 0.4)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.star, color: Colors.green, size: 32),
-          const SizedBox(width: 16),
+          const Icon(Icons.auto_awesome_rounded, color: AppColors.lime, size: 26),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'No weaknesses detected yet. Start practising to let the AI analyse your skills!',
-              style: TextStyle(color: Colors.green.shade800),
+              'No weaknesses detected yet. Start practising — the AI will diagnose what to focus on.',
+              style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.45),
             ),
           ),
         ],
@@ -160,23 +343,31 @@ class _EmptyWeaknessCard extends StatelessWidget {
   }
 }
 
-class _ErrorCard extends StatelessWidget {
+class _ErrorBlock extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorCard({required this.message, required this.onRetry});
+  const _ErrorBlock({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Text(message, style: const TextStyle(color: Colors.red)),
-            const SizedBox(height: 8),
-            TextButton(onPressed: onRetry, child: const Text('Retry')),
-          ],
-        ),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.pink.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(message, style: AppText.body(size: 12, color: AppColors.pink)),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: onRetry,
+            style: TextButton.styleFrom(foregroundColor: AppColors.lime),
+            child: const Text('Retry'),
+          ),
+        ],
       ),
     );
   }
