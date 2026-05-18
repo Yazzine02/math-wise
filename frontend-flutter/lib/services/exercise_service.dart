@@ -31,8 +31,10 @@ class ExerciseService {
     });
     final response = await ApiClient.post('/api/exercises/evaluate', body);
     if (response.statusCode == 200) {
-      final isCorrect = correctAnswer.trim().toLowerCase() == studentAnswer.trim().toLowerCase();
-      return AiFeedback.fromJson(jsonDecode(response.body), isCorrect: isCorrect);
+      // Correctness is now server-authoritative (SymPy-backed). Don't compare
+      // strings client-side — that's what caused false negatives on
+      // equivalent-but-differently-formatted answers like "1/2" vs "0.5".
+      return AiFeedback.fromJson(jsonDecode(response.body));
     }
     throw Exception('Failed to submit answer: ${response.body}');
   }

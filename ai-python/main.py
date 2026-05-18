@@ -1,6 +1,13 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from sympy import simplify
+from sympy.parsing.sympy_parser import (
+    parse_expr,
+    standard_transformations,
+    implicit_multiplication_application,
+    convert_xor,
+)
 import requests
 import os
 import json
@@ -15,6 +22,14 @@ class MathEvaluationRequest(BaseModel):
     equation:str
     correct_answer:str
     student_answer:str
+
+class AnswerCheckRequest(BaseModel):
+    correct_answer: str
+    student_answer: str
+
+class AnswerCheckResponse(BaseModel):
+    is_correct: bool
+    used_symbolic_check: bool  # False ⇒ we fell back to string equality
 
 #----ADAPTER----
 # All adapters have to implement the evaluate_student_error method
@@ -123,3 +138,66 @@ Do not include any text outside the JSON.
         return result_json
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ----SYMBOLIC ANSWER CHECK----
+# SymPy parser transformations: lets us accept "2x" (implicit *), "(x+2)(x+3)"
+# (juxtaposition multiplication), and "x^2" (caret as power) — the natural ways
+# a student types math, not the Python literal forms.
+_SYMPY_TRANSFORMATIONS = standard_transformations + (
+    implicit_multiplication_application,
+    convert_xor,
+)
+
+
+def _answers_equivalent(correct: str, student: str) -> tuple[bool, bool]:
+    """
+    Returns (is_equivalent, used_symbolic_check).
+
+    Symbolic path: parse both sides into SymPy expressions and check whether
+    `simplify(correct - student) == 0`. This makes the following pairs
+    equivalent (none of which string equality catches):
+        "2/3" ⇔ "4/6"
+        "0.5" ⇔ "1/2"
+        "(x+2)(x+3)" ⇔ "(x+3)(x+2)" ⇔ "x^2 + 5x + 6"
+        "85"  ⇔ "85.0"
+
+    If parsing either side fails (student typed a word, a unit, a sentence,
+    etc.) we fall back to case-insensitive trimmed string equality so we never
+    crash on non-mathematical input. The `used_symbolic_check` flag in the
+    response tells the caller which path produced the verdict.
+    """
+    a = (correct or "").strip()
+    b = (student or "").strip()
+    if not a or not b:
+        return (False, False)
+
+    # Lowercase before parsing so "X" and "x" are treated the same. Safe for
+    # this domain because all seeded exercises use lowercase identifiers.
+    a_norm = a.lower()
+    b_norm = b.lower()
+
+    try:
+        expr_a = parse_expr(a_norm, transformations=_SYMPY_TRANSFORMATIONS)
+        expr_b = parse_expr(b_norm, transformations=_SYMPY_TRANSFORMATIONS)
+        return (simplify(expr_a - expr_b) == 0, True)
+    except Exception:
+        # Unparseable on at least one side — fall back to plain text compare.
+        return (a_norm == b_norm, False)
+
+
+@app.post("/check-answer", response_model=AnswerCheckResponse)
+def check_answer(request: AnswerCheckRequest) -> AnswerCheckResponse:
+    """
+    Fast (sub-50ms) authoritative correctness check. Spring Boot calls this
+    BEFORE the LLM diagnosis endpoint, so correct answers skip the LLM
+    entirely (saving 5–30s per request) and incorrect answers can still be
+    routed through Llama for an explanation.
+    """
+    is_correct, used_symbolic = _answers_equivalent(
+        request.correct_answer, request.student_answer
+    )
+    return AnswerCheckResponse(
+        is_correct=is_correct,
+        used_symbolic_check=used_symbolic,
+    )
