@@ -13,6 +13,7 @@ import com.mathwise.backend.repository.KnowledgeNodeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -47,7 +48,16 @@ public class AiEvaluationService {
      *       avoids the noise of a small model trying to comment on a perfect
      *       answer.</li>
      * </ol>
+     *
+     * <p>{@code @Transactional} ties the {@link InteractionLog} write to the
+     * rest of the method. If the DB save throws (constraint violation,
+     * connection pool exhaustion) Spring rolls back the transaction and the
+     * exception propagates to the controller — the client receives a proper
+     * error response instead of "Correct!" feedback for a row that was never
+     * persisted. The external HTTP calls obviously cannot be rolled back, but
+     * the audit trail and the client response are now consistent.
      */
+    @Transactional
     public AiFeedbackDto evaluateStudentAnswer(EvaluateAnswerRequestDto requestDto) {
         Student student = (Student) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         KnowledgeNode testedNode = knowledgeNodeRepository.findByNodeCode(requestDto.getNodeCode())
