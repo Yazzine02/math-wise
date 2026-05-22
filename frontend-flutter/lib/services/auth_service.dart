@@ -1,16 +1,19 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_client.dart';
 
 class AuthService {
-  // Need to use 10.0.2.2 instead of local host since it is a vm
-  static const String baseUrl = 'http://10.0.2.2:9090/api/auth';
+  // Single source of truth for the API base URL lives in ApiClient. Auth
+  // endpoints can't use ApiClient.get/post directly because the JWT-injecting
+  // helpers there assume the user is already authenticated.
+  static const String _authBaseUrl = '${ApiClient.baseUrl}/api/auth';
 
   // --- LOGIN ---
   static Future<String?> login(String email, String password) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+        Uri.parse('$_authBaseUrl/login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
@@ -36,7 +39,7 @@ class AuthService {
   static Future<String?> register(String email, String password, String displayName) async {
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/register'),
+        Uri.parse('$_authBaseUrl/register'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'email': email,
