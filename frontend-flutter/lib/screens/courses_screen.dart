@@ -6,11 +6,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../errors/api_exception.dart';
 import '../models/course.dart';
+import '../providers/auth_provider.dart';
 import '../services/course_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/error_view.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -84,7 +88,23 @@ class _CoursesScreenState extends State<CoursesScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   )
                 else if (snap.hasError)
-                  _ErrorBlock(message: '${snap.error}', onRetry: _refresh)
+                  Builder(builder: (ctx) {
+                    final err = snap.error;
+                    if (err is UnauthorizedException) {
+                      // Bounce to /login. Schedule for after build to avoid
+                      // calling setState inside another widget's build.
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ctx.read<AuthProvider>().logout();
+                      });
+                      return const SizedBox.shrink();
+                    }
+                    return ErrorView(
+                      error: err is ApiException
+                          ? err
+                          : ApiException(message: err.toString()),
+                      onRetry: _refresh,
+                    );
+                  })
                 else if ((snap.data ?? []).isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
@@ -169,34 +189,3 @@ class _CourseCard extends StatelessWidget {
   }
 }
 
-class _ErrorBlock extends StatelessWidget {
-  final String message;
-  final Future<void> Function() onRetry;
-  const _ErrorBlock({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.pink.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Failed to load courses', style: AppText.title(size: 14, color: AppColors.pink)),
-          const SizedBox(height: 6),
-          Text(message, style: AppText.body(size: 12, color: AppColors.pink)),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: onRetry,
-            style: TextButton.styleFrom(foregroundColor: AppColors.lime),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-}
