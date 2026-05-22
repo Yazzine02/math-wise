@@ -26,15 +26,18 @@ class _RAGRetriever:
             self.model = None
             self.collection = None
 
-    def retrieve(self, query: str, k: int = TOP_K) -> list[str]:
+    def retrieve(self, query: str, k: int = TOP_K, node_code: str = None) -> list[str]:
         if not self.model or not self.collection:
             return []
 
         try:
             embedding = self.model.encode(query).tolist()
+            where_filter = {"knowledge_node_code": node_code} if node_code else None
+
             results = self.collection.query(
                 query_embeddings=[embedding],
                 n_results=k,
+                where=where_filter,
                 include=["documents", "distances"]
             )
 
@@ -53,12 +56,12 @@ class _RAGRetriever:
             return []
 
 
-def retrieve_excerpts(query: str, k: int = TOP_K) -> list[str]:
+def retrieve_excerpts(query: str, k: int = TOP_K, node_code: str = None) -> list[str]:
     global _retriever_instance
     try:
         if _retriever_instance is None:
             _retriever_instance = _RAGRetriever()
-        return _retriever_instance.retrieve(query, k)
+        return _retriever_instance.retrieve(query, k, node_code)
     except Exception as e:
         logger.warning(f"RAG retrieval failed: {e}")
         return []

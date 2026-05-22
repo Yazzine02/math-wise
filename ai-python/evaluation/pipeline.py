@@ -44,7 +44,8 @@ def evaluate(request: EvaluationRequest, knowledge_nodes: list[dict]) -> Evaluat
     # ----------------------------------------------------------------
     rag_excerpts = retrieve_excerpts(
         query=f"{request.exercise_type} {verification.error_detail}",
-        k=3
+        k=3,
+        node_code=request.exercise_type.upper()
     )
 
     # ----------------------------------------------------------------
