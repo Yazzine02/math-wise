@@ -4,39 +4,41 @@ import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
-  bool _isInitialized = false; // Prevents routing before we check storage
+  bool _isInitialized = false;
+  String _displayName = '';
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isInitialized => _isInitialized;
+  String get displayName => _displayName;
 
   AuthProvider() {
     _checkExistingToken();
   }
 
-  // Check SharedPreferences on app startup
   Future<void> _checkExistingToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('jwt_token');
-    
     _isAuthenticated = token != null;
+    _displayName = prefs.getString('display_name') ?? '';
     _isInitialized = true;
-    notifyListeners(); // Wakes up the router
+    notifyListeners();
   }
 
-  // Wrapper for your static login method
   Future<String?> login(String email, String password) async {
     final error = await AuthService.login(email, password);
     if (error == null) {
+      final prefs = await SharedPreferences.getInstance();
+      _displayName = prefs.getString('display_name') ?? '';
       _isAuthenticated = true;
-      notifyListeners(); // Tells the router to redirect to home
+      notifyListeners();
     }
     return error;
   }
 
-  // Wrapper for your static logout method
   Future<void> logout() async {
     await AuthService.logout();
     _isAuthenticated = false;
-    notifyListeners(); // Tells the router to kick user to login screen
+    _displayName = '';
+    notifyListeners();
   }
 }

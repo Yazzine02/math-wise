@@ -1,8 +1,11 @@
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../screens/login_screen.dart';
-import '../screens/home_screen.dart'; 
+import '../screens/home_screen.dart';
 import '../screens/register_screen.dart';
+import '../screens/exercise_screen.dart';
+import '../screens/feedback_screen.dart';
+import '../models/ai_feedback.dart';
 
 class AppRouter {
   final AuthProvider authProvider;
@@ -48,6 +51,16 @@ class AppRouter {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/exercise',
+        name: 'exercise',
+        builder: (context, state) => const ExerciseScreen(),
+      ),
+      GoRoute(
+        path: '/feedback',
+        name: 'feedback',
+        builder: (context, state) => FeedbackScreen(feedback: state.extra as AiFeedback),
       ),
     ],
   );
