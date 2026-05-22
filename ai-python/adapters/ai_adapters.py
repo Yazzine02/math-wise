@@ -42,7 +42,7 @@ class CloudAPIAdapter(AIEngineAdapter):
         }
         try:
             response = requests.post(
-                self.url, headers=headers, json=payload, timeout=30
+                self.url, headers=headers, json=payload
             )
             data = response.json()
             return json.loads(data["choices"][0]["message"]["content"])
@@ -64,7 +64,7 @@ class LocalModelAdapter(AIEngineAdapter):
             "format": "json",
         }
         try:
-            response = requests.post(self.url, json=payload, timeout=120)
+            response = requests.post(self.url, json=payload)
             data = response.json()
             return json.loads(data["response"])
         except Exception as e:
