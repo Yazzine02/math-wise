@@ -98,13 +98,13 @@ public class AiEvaluationService {
 
         // 3. Normalise the AI-supplied weakness (only meaningful when wrong)
         if (!isCorrect) {
-            String raw = feedback.getWeakness_node();
+            String raw = feedback.getWeaknessNode();
             String canonical = nodeResolver.resolve(raw)
                     .map(KnowledgeNode::getNodeCode)
                     .orElse(testedNode.getNodeCode());
-            feedback.setWeakness_node(canonical);
+            feedback.setWeaknessNode(canonical);
         }
-        feedback.setIs_correct(isCorrect);
+        feedback.setCorrect(isCorrect);
 
         // 4. Persist the audit row
         InteractionLog log = new InteractionLog();
@@ -115,7 +115,7 @@ public class AiEvaluationService {
         log.setCorrect(isCorrect);
         log.setActive(true);
         if (!isCorrect) {
-            log.setAiIdentifiedWeaknessCode(feedback.getWeakness_node());
+            log.setAiIdentifiedWeaknessCode(feedback.getWeaknessNode());
             log.setAiExplanation(feedback.getExplanation());
         }
         interactionLogRepository.save(log);

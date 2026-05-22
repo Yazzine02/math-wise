@@ -3,6 +3,7 @@ package com.mathwise.backend.controller;
 import com.mathwise.backend.dto.AiFeedbackDto;
 import com.mathwise.backend.dto.EvaluateAnswerRequestDto;
 import com.mathwise.backend.service.AiEvaluationService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,7 @@ public class AiEvaluationController {
     }
 
     @PostMapping("/evaluate")
-    public ResponseEntity<AiFeedbackDto> evaluateError(@RequestBody EvaluateAnswerRequestDto requestDto) {
+    public ResponseEntity<AiFeedbackDto> evaluateError(@Valid @RequestBody EvaluateAnswerRequestDto requestDto) {
         AiFeedbackDto feedback = aiEvaluationService.evaluateStudentAnswer(requestDto);
         return ResponseEntity.ok(feedback);
     }

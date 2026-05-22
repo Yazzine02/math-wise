@@ -28,7 +28,7 @@ class AuthService {
         await prefs.setString('display_name', data['display_name'] ?? '');
         return null;
       } else {
-        return response.body;
+        return _extractErrorMessage(response.body);
       }
     } catch (e) {
       return 'Network error: Could not connect to server.';
@@ -55,7 +55,7 @@ class AuthService {
         await prefs.setString('display_name', data['display_name'] ?? displayName);
         return null;
       } else {
-        return response.body;
+        return _extractErrorMessage(response.body);
       }
     } catch (e) {
       return 'Network error: Could not connect to server.';
@@ -67,5 +67,21 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
     await prefs.remove('display_name');
+  }
+
+  /// Backend errors now follow a uniform JSON envelope (ErrorResponseDto):
+  /// {"status":409,"code":"EMAIL_ALREADY_EXISTS","message":"...", ...}
+  /// Extract the human-readable `message` field. Falls back to the raw body
+  /// for any older endpoint that still returns plain text.
+  static String _extractErrorMessage(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map && decoded['message'] is String) {
+        return decoded['message'] as String;
+      }
+    } catch (_) {
+      // Not JSON — fall through.
+    }
+    return body;
   }
 }
