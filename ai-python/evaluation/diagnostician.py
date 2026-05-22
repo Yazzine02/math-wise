@@ -14,7 +14,8 @@ def _build_prompt(
     exercise_type: str,
     equation: str,
     verification: VerificationResult,
-    knowledge_nodes: list[dict]
+    knowledge_nodes: list[dict],
+    rag_excerpts: list[str] | None = None
 ) -> str:
     """
     Construit un prompt contraint pour le LLM.
@@ -26,6 +27,17 @@ def _build_prompt(
        → il ne peut pas inventer une lacune qui n'existe pas en DB
     """
     nodes_formatted = json.dumps(knowledge_nodes, ensure_ascii=False, indent=2)
+    rag_section = ""
+    if rag_excerpts:
+        excerpts_formatted = "\n".join(f"• {e}" for e in rag_excerpts)
+        rag_section = f"""
+--- EXTRAITS DU CORPUS PÉDAGOGIQUE ---
+Voici des rappels de cours pertinents pour cette erreur :
+{excerpts_formatted}
+
+Appuie-toi sur ces rappels pour formuler ton explication.
+
+"""
 
     return f"""Tu es un expert en didactique des mathématiques pour le niveau Terminale.
 
@@ -36,8 +48,7 @@ Question posée       : {equation}
 Bonne réponse        : {verification.expected_str}
 Réponse de l'étudiant: {verification.student_str}
 Analyse mathématique : {verification.error_detail}
-
---- NŒUDS DE LACUNES DISPONIBLES ---
+{rag_section}--- NŒUDS DE LACUNES DISPONIBLES ---
 Tu dois obligatoirement choisir UN nœud parmi cette liste.
 Ne pas inventer un nœud qui n'existe pas dans la liste.
 
@@ -119,7 +130,8 @@ def diagnose(
     exercise_type: str,
     equation: str,
     verification: VerificationResult,
-    knowledge_nodes: list[dict]
+    knowledge_nodes: list[dict],
+    rag_excerpts: list[str] | None = None
 ) -> DiagnosisResult:
     """
     Appelle get_ai_adapter() pour obtenir l'adapter actif (local ou cloud)
@@ -133,7 +145,7 @@ def diagnose(
     ai_adapter = get_ai_adapter()
 
     # 2. Construit le prompt avec le détail de l'erreur Sympy
-    prompt = _build_prompt(exercise_type, equation, verification, knowledge_nodes)
+    prompt = _build_prompt(exercise_type, equation, verification, knowledge_nodes, rag_excerpts)
 
     # 3. Appelle .evaluate() — même interface peu importe l'adapter
     try:

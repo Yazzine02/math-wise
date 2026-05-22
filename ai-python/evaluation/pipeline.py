@@ -1,6 +1,7 @@
 from models.shemas import EvaluationRequest, EvaluationResponse
 from evaluation.verifier import verify
 from evaluation.diagnostician import diagnose
+from rag.retriever import retrieve_excerpts 
 
 
 def evaluate(request: EvaluationRequest, knowledge_nodes: list[dict]) -> EvaluationResponse:
@@ -36,9 +37,18 @@ def evaluate(request: EvaluationRequest, knowledge_nodes: list[dict]) -> Evaluat
     # ----------------------------------------------------------------
     if verification.correct:
         return EvaluationResponse(correct=True)
+    
+    # ----------------------------------------------------------------
+    # ÉTAPE 3 — RAG : récupère les extraits de cours pertinents
+    # Retourne [] si ChromaDB vide ou absent — pas de plantage
+    # ----------------------------------------------------------------
+    rag_excerpts = retrieve_excerpts(
+        query=f"{request.exercise_type} {verification.error_detail}",
+        k=3
+    )
 
     # ----------------------------------------------------------------
-    # ÉTAPE 3 — LLM DIAGNOSTIC SI INCORRECT
+    # ÉTAPE 4 — LLM DIAGNOSTIC SI INCORRECT
     # Le LLM reçoit le détail de l'erreur calculé par Sympy
     # Il choisit parmi les knowledge_nodes existants en DB
     # ----------------------------------------------------------------
@@ -46,7 +56,8 @@ def evaluate(request: EvaluationRequest, knowledge_nodes: list[dict]) -> Evaluat
         exercise_type=request.exercise_type,
         equation=request.equation,
         verification=verification,
-        knowledge_nodes=knowledge_nodes
+        knowledge_nodes=knowledge_nodes,
+        rag_excerpts=rag_excerpts  
     )
 
     return EvaluationResponse(
