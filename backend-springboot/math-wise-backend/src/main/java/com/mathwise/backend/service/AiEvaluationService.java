@@ -16,6 +16,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Service
 public class AiEvaluationService {
 
@@ -82,6 +87,13 @@ public class AiEvaluationService {
             aiRequest.setEquation(requestDto.getEquation());
             aiRequest.setCorrectAnswer(requestDto.getCorrectAnswer());
             aiRequest.setStudentAnswer(requestDto.getStudentAnswer());
+            // Phase 7: send the topic + its prereq chain so the LLM can reason
+            // about WHICH prerequisite skill the student's slip actually
+            // reflects (e.g. a division error during a linear-equation
+            // problem). The LLM is still free to return any of the 8
+            // canonical codes — these are hints, not constraints.
+            aiRequest.setNodeCode(testedNode.getNodeCode());
+            aiRequest.setPrerequisiteCodes(collectPrerequisiteChain(testedNode));
 
             feedback = restTemplate.postForObject(
                     aiServiceUrl + "/evaluate-error",
@@ -121,5 +133,23 @@ public class AiEvaluationService {
         interactionLogRepository.save(log);
 
         return feedback;
+    }
+
+    /**
+     * Walks the {@code prerequisiteNode} chain from the tested node outward,
+     * collecting canonical codes in order (immediate prereq first). Bounded
+     * length and visited-set as a cycle guard, identical pattern to the
+     * descent in {@code StudentProgressService}.
+     */
+    private List<String> collectPrerequisiteChain(KnowledgeNode start) {
+        List<String> chain = new ArrayList<>();
+        Set<String> visited = new HashSet<>();
+        KnowledgeNode cursor = start.getPrerequisiteNode();
+        int hops = 0;
+        while (cursor != null && hops++ < 10 && visited.add(cursor.getNodeCode())) {
+            chain.add(cursor.getNodeCode());
+            cursor = cursor.getPrerequisiteNode();
+        }
+        return chain;
     }
 }

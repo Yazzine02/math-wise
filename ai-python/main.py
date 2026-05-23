@@ -19,9 +19,14 @@ app = FastAPI(title="Math Wise AI Service")
 
 #----DATA MODELS----
 class MathEvaluationRequest(BaseModel):
-    equation:str
-    correct_answer:str
-    student_answer:str
+    equation: str
+    correct_answer: str
+    student_answer: str
+    # Phase 7: topic + prereq chain. Optional so older Spring Boot revisions
+    # without these fields still work — the prompt falls back to a generic
+    # framing when they're absent.
+    node_code: str | None = None
+    prerequisite_codes: list[str] = []
 
 class AnswerCheckRequest(BaseModel):
     correct_answer: str
@@ -107,24 +112,69 @@ VALID_WEAKNESS_NODES = [
 
 @app.post("/evaluate-error")
 def evaluate_student_error(request: MathEvaluationRequest):
-    # 1. Construct the strict prompt
+    # 1. Construct the prompt
     nodes_block = "\n".join(f"- {code}" for code in VALID_WEAKNESS_NODES)
+    topic_block = (
+        f"Topic being tested: {request.node_code}"
+        if request.node_code else "Topic being tested: (unspecified)"
+    )
+    prereqs_block = (
+        "Formal prerequisites in the curriculum: " + ", ".join(request.prerequisite_codes)
+        if request.prerequisite_codes
+        else "Formal prerequisites in the curriculum: (none — this is a foundational topic)"
+    )
+
     system_prompt = f"""
-You are an expert math tutor. Analyze the student's incorrect answer and
-identify the single fundamental concept they are weak in.
+You are an expert math tutor analyzing why a student got an answer wrong.
+Your job is to identify the SPECIFIC underlying mistake, not just the topic.
 
-Equation: {request.equation}
-Correct Answer: {request.correct_answer}
-Student Answer: {request.student_answer}
+Question: {request.equation}
+Correct answer: {request.correct_answer}
+Student's answer: {request.student_answer}
+{topic_block}
+{prereqs_block}
 
-The "weakness_node" field MUST be EXACTLY ONE of these codes, copied verbatim
+REASON STEP BY STEP. Mentally reconstruct the sequence of operations the
+student most likely performed to reach their answer. Identify the FIRST
+step where they went wrong.
+
+The "weakness_node" should reflect the concept involved in THAT specific
+erroneous step — which is very often a PREREQUISITE skill, not the topic
+itself. Solving a linear equation requires addition, subtraction,
+multiplication, and division; a slip in any of those is the real weakness
+even though the question looked like an "algebra" question.
+
+──── WORKED EXAMPLE ────
+  Question: "Solve for x: 3x - 4 = 11"
+  Correct answer: 5
+  Student's answer: 3
+  Topic: ALGEBRA_LINEAR
+
+  Step-by-step reconstruction of what the student likely did:
+    1. Started with: 3x - 4 = 11
+    2. Added 4 to both sides:  3x = 15           (correct)
+    3. Divided both sides by 3: x = 15 / 3       (correct setup)
+    4. Computed: x = 3                           (WRONG: 15 / 3 = 5, not 3)
+
+  The algebra moves (steps 2 and 3) were perfect. The slip is in step 4,
+  a pure arithmetic-division error.
+  → weakness_node: ARITH_DIVISION
+
+──── INSTRUCTIONS ────
+The "weakness_node" MUST be EXACTLY ONE of these codes, copied verbatim
 (uppercase, with underscores). Do NOT translate, paraphrase, or use the
 human-readable name:
 {nodes_block}
 
+Prefer a prerequisite code over the topic code itself when the error is
+purely computational. Only attribute the weakness to the topic itself if
+the student misunderstood the *method* (e.g. didn't isolate x correctly,
+didn't apply the distributive property), not the arithmetic.
+
 Return ONLY a JSON object with two keys:
 - "weakness_node": (string) one of the codes above, exactly as written
-- "explanation":   (string) a brief, friendly tutor explanation of the mistake
+- "explanation":   (string) a brief, friendly tutor explanation that
+                   names the specific arithmetic mistake
 
 Do not include any text outside the JSON.
 """

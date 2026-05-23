@@ -104,7 +104,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               controller: _displayNameController,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              errorText: fieldErrors['displayName'],
+              errorText: fieldErrors?['displayName'],
             ),
             const SizedBox(height: 14),
             MwField(
@@ -112,7 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
-              errorText: fieldErrors['email'],
+              errorText: fieldErrors?['email'],
             ),
             const SizedBox(height: 14),
             MwField(
@@ -121,7 +121,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               obscure: true,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _register(),
-              errorText: fieldErrors['password'],
+              errorText: fieldErrors?['password'],
             ),
 
             if (showBanner) ...[

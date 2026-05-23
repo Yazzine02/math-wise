@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
                 hint: 'you@school.edu',
-                errorText: fieldErrors['email'],
+                errorText: fieldErrors?['email'],
               ),
               const SizedBox(height: 14),
               MwField(
@@ -116,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 obscure: true,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _login(),
-                errorText: fieldErrors['password'],
+                errorText: fieldErrors?['password'],
               ),
 
               if (showBanner) ...[
