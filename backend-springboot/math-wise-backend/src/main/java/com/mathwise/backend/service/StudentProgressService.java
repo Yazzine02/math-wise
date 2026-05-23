@@ -247,27 +247,80 @@ public class StudentProgressService {
 
     /**
      * Cold start — student has no live (un-mastered) recent weaknesses we
-     * can use.
+     * can use. Hands the student the next exercise that should unlock for
+     * them in the curriculum graph.
      *
-     * <p>Curriculum-aware strategy (Phase 7): if the student has never
-     * attempted ANY exercise we serve the lowest-difficulty root node
-     * (in the seeded graph: ARITH_ADDITION). Otherwise the student has
-     * cleared their backlog — they're free to roam, so we pick randomly
-     * from the nodes they've already touched.
+     * <p>The original Phase 7 implementation picked uniformly at random from
+     * <em>previously-attempted</em> nodes, which meant a student who'd only
+     * ever touched ARITH_ADDITION (because that's what cold-start gave them
+     * on day one) was forever stuck on ARITH_ADDITION — the only choice in
+     * their attempted set. That's the bug this method fixes.
+     *
+     * <p>New behaviour:
+     * <ol>
+     *   <li>Compute the mastered set: every node where the student's last
+     *       {@link #MASTERY_THRESHOLD} attempts are all correct.</li>
+     *   <li>Find the easiest UNMASTERED node whose prerequisite is
+     *       satisfied (prereq is null → it's a curriculum root, OR prereq
+     *       is in the mastered set). This is the natural next step in the
+     *       curriculum graph.</li>
+     *   <li>Once everything is mastered (the student has cleared the
+     *       curriculum), fall back to a random review pick from the
+     *       attempted set so they can continue practising without the
+     *       engine returning null.</li>
+     *   <li>If even the attempted set is empty (truly cold install with
+     *       seeded but never-touched nodes), fall back to the curriculum
+     *       root.</li>
+     * </ol>
+     *
+     * <p>Worked example (seeded graph, all difficulty values from
+     * DataSeeder):
+     * <pre>
+     *   mastered = {}                    → ARITH_ADDITION (root, diff 1)
+     *   mastered = {ADDITION}            → ARITH_SUBTRACTION (diff 1, prereq mastered)
+     *   mastered = {ADD, SUB}            → ARITH_MULTIPLICATION (diff 2)
+     *   mastered = {ADD, SUB, MULT}      → ARITH_DIVISION (diff 2)
+     *   mastered = {ADD, SUB, MULT, DIV} → FRACTIONS_SIMPLIFY (diff 3)
+     * </pre>
      */
     private KnowledgeNode pickColdStartNode(UUID studentId) {
-        List<String> attempted = interactionLogRepository
-                .findDistinctAttemptedNodeCodesByStudentId(studentId);
-
-        if (attempted.isEmpty()) {
-            return pickCurriculumStart();
+        List<KnowledgeNode> allNodes = knowledgeNodeRepository.findAll();
+        if (allNodes.isEmpty()) {
+            throw new IllegalStateException("No knowledge nodes seeded.");
         }
 
-        // Returning student with no live weaknesses — pick from familiar
-        // territory rather than restarting them at Addition.
-        String pick = attempted.get(random.nextInt(attempted.size()));
-        return knowledgeNodeRepository.findByNodeCode(pick)
-                .orElseGet(this::pickCurriculumStart);
+        Set<String> mastered = new HashSet<>();
+        for (KnowledgeNode n : allNodes) {
+            if (isMastered(studentId, n.getNodeCode())) {
+                mastered.add(n.getNodeCode());
+            }
+        }
+
+        Optional<KnowledgeNode> next = allNodes.stream()
+                .filter(n -> !mastered.contains(n.getNodeCode()))
+                .filter(n -> {
+                    KnowledgeNode prereq = n.getPrerequisiteNode();
+                    return prereq == null || mastered.contains(prereq.getNodeCode());
+                })
+                .min(Comparator
+                        .comparingInt(KnowledgeNode::getDifficultyLevel)
+                        .thenComparing(KnowledgeNode::getNodeCode));
+
+        if (next.isPresent()) {
+            return next.get();
+        }
+
+        // Everything reachable is mastered — congratulations, the student
+        // has cleared the curriculum. Fall back to random review.
+        List<String> attempted = interactionLogRepository
+                .findDistinctAttemptedNodeCodesByStudentId(studentId);
+        if (!attempted.isEmpty()) {
+            String pick = attempted.get(random.nextInt(attempted.size()));
+            return knowledgeNodeRepository.findByNodeCode(pick)
+                    .orElseGet(this::pickCurriculumStart);
+        }
+
+        return pickCurriculumStart();
     }
 
     /**

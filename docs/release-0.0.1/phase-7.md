@@ -21,10 +21,23 @@ After running the app for real, three behaviours felt off:
 
 ### 2.1 Curriculum cold-start + 70/30 mix (concern 1)
 
-**Cold start** — `pickColdStartNode(studentId)` now runs a small decision tree:
+**Cold start** — `pickColdStartNode(studentId)` walks the curriculum graph based on the student's current mastery state:
 
-- If the student has **never attempted any exercise** → return the lowest-difficulty root node of the curriculum graph (in the seeded data: `ARITH_ADDITION`). Deterministic; ties on difficulty broken by alphabetical code.
-- If the student has attempted exercises but currently has **no live weaknesses** (everything's been mastered or aged out) → pick randomly from their previously-attempted nodes. We don't want to restart them at Addition; they've moved past it.
+1. Compute the mastered set (every node where the student's last 3 attempts are all correct).
+2. Find the easiest **unmastered** node whose prerequisite is satisfied (prereq is null → it's a root, OR prereq is in the mastered set). Ties on difficulty broken by alphabetical code.
+3. If everything is mastered, fall back to a random review pick from attempted nodes.
+
+This unfolds the curriculum naturally as the student progresses:
+
+| Mastered | Next exercise |
+|---|---|
+| `{}` | `ARITH_ADDITION` (root, diff 1) |
+| `{ADDITION}` | `ARITH_SUBTRACTION` (diff 1, prereq mastered) |
+| `{ADD, SUB}` | `ARITH_MULTIPLICATION` (diff 2) |
+| `{ADD, SUB, MULT}` | `ARITH_DIVISION` (diff 2) |
+| `{ADD, SUB, MULT, DIV}` | `FRACTIONS_SIMPLIFY` (diff 3) |
+
+> **Note:** The initial Phase 7 implementation had a bug here — it picked uniformly at random from *previously-attempted* nodes only. A student who'd only touched `ARITH_ADDITION` (which is what cold-start handed them on day one) was stuck on Addition forever because their attempted set was `{ARITH_ADDITION}` — the only choice. Fixed in commit after Phase 7. See `pickColdStartNode` Javadoc for the worked example.
 
 **Exploration mix** — after the adaptive path identifies a target node, with probability `0.30` (`EXPLORATION_RATE`) we swap that target for a previously-attempted **non-weakness** node. The student sees a review/familiar exercise roughly 1 in 3 adaptive sessions, breaking the monotony and giving spaced-repetition-lite over mastered material.
 
