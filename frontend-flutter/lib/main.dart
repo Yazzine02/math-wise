@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/dashboard_signal.dart';
 import 'routing/app_router.dart';
 import 'theme/app_theme.dart';
 
@@ -33,6 +34,7 @@ class MathWiseApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardSignal()),
         ProxyProvider<AuthProvider, AppRouter>(
           update: (context, authProvider, previous) => AppRouter(authProvider),
         ),

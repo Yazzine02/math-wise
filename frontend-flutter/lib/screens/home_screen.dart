@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import '../errors/api_exception.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_signal.dart';
 import '../models/weakness_summary.dart';
 import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
@@ -30,10 +31,29 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _loading = true;
   ApiException? _error;
 
+  /// Held so we can unregister the listener cleanly in dispose. The
+  /// signal fires from anywhere in the app (e.g. ExerciseScreen after a
+  /// submit) and triggers a fresh _load — so the dashboard stays
+  /// up-to-date even when the home screen was hidden under the
+  /// navigation stack the whole time.
+  late final DashboardSignal _dashboardSignal;
+
   @override
   void initState() {
     super.initState();
+    _dashboardSignal = context.read<DashboardSignal>();
+    _dashboardSignal.addListener(_onDashboardInvalidated);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _dashboardSignal.removeListener(_onDashboardInvalidated);
+    super.dispose();
+  }
+
+  void _onDashboardInvalidated() {
+    if (mounted) _load();
   }
 
   Future<void> _load() async {

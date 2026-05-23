@@ -12,6 +12,7 @@ import '../errors/api_exception.dart';
 import '../models/exercise.dart';
 import '../models/ai_feedback.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_signal.dart';
 import '../services/exercise_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
@@ -68,6 +69,13 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         studentAnswer: answer,
       );
       if (!mounted) return;
+      // The submission changed something the dashboard cares about — a
+      // new InteractionLog row was written, which may have added a new
+      // weakness OR dissolved an existing one via the mastery check.
+      // Ping the signal so the home screen reloads, even if the user
+      // never navigates through a context.go('/home') that would
+      // re-mount it.
+      context.read<DashboardSignal>().invalidate();
       _answerController.clear();
       final wantsNext = await context.pushNamed<bool>('feedback', extra: fb);
       if (!mounted) return;
