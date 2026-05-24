@@ -75,6 +75,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   onPressed: () => context.push('/exercise'),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.menu_book),
+                  label: const Text('Browse Courses'),
+                  style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+                  onPressed: () => context.push('/courses'),
+                ),
+              ),
               const SizedBox(height: 40),
               Text(
                 'Your Weak Areas',
