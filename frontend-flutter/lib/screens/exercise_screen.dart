@@ -1,15 +1,20 @@
+// lib/screens/exercise_screen.dart
+//
+// Adaptive exercise. Matches the design mockup: top bar with home button,
+// difficulty badge, big gradient question card, focused-glow answer card.
+// Wiring unchanged from the feature/courses branch.
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+
 import '../models/exercise.dart';
 import '../models/ai_feedback.dart';
 import '../services/exercise_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/app_widgets.dart';
 
 class ExerciseScreen extends StatefulWidget {
-  /// If provided, the screen pulls exercises only from this specific knowledge node
-  /// (used when launched from a course's "Practice" button). When null, the backend
-  /// serves an adaptive exercise based on the student's weakness history.
   final String? nodeCode;
-
   const ExerciseScreen({super.key, this.nodeCode});
 
   @override
@@ -38,8 +43,8 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Future<void> _loadExercise() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final exercise = await ExerciseService.getNextExercise(nodeCode: widget.nodeCode);
-      if (mounted) setState(() { _exercise = exercise; _loading = false; });
+      final ex = await ExerciseService.getNextExercise(nodeCode: widget.nodeCode);
+      if (mounted) setState(() { _exercise = ex; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
@@ -48,18 +53,21 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Future<void> _submit() async {
     final answer = _answerController.text.trim();
     if (answer.isEmpty || _exercise == null) return;
-
     setState(() { _submitting = true; _error = null; });
     try {
-      final AiFeedback feedback = await ExerciseService.submitAnswer(
+      final AiFeedback fb = await ExerciseService.submitAnswer(
         nodeCode: _exercise!.nodeCode,
         equation: _exercise!.questionText,
         correctAnswer: _exercise!.correctAnswer,
         studentAnswer: answer,
       );
-      if (mounted) {
-        _answerController.clear();
-        context.push('/feedback', extra: feedback);
+      if (!mounted) return;
+      _answerController.clear();
+      final wantsNext = await context.pushNamed<bool>('feedback', extra: fb);
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      if (wantsNext == true) {
+        await _loadExercise();
       }
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _submitting = false; });
@@ -68,78 +76,122 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_exercise != null ? _exercise!.nodeTitle : 'Practice'),
-        leading: IconButton(
-          icon: const Icon(Icons.home),
-          onPressed: () => context.go('/home'),
-        ),
-      ),
-      body: _loading
+    return MwScaffold(
+      child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!, style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 16),
-                      ElevatedButton(onPressed: _loadExercise, child: const Text('Retry')),
-                    ],
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _DifficultyChip(level: _exercise!.difficultyLevel),
-                      const SizedBox(height: 24),
-                      Text(
-                        _exercise!.questionText,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 32),
-                      TextField(
-                        controller: _answerController,
-                        decoration: const InputDecoration(
-                          labelText: 'Your answer',
-                          border: OutlineInputBorder(),
-                          hintText: 'Type your answer here...',
-                        ),
-                        onSubmitted: (_) => _submit(),
-                        textInputAction: TextInputAction.done,
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton(
-                          onPressed: _submitting ? null : _submit,
-                          child: _submitting
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Text('Submit Answer'),
-                        ),
-                      ),
-                    ],
+              ? _ErrorBlock(error: _error!, onRetry: _loadExercise)
+              : _body(),
+    );
+  }
+
+  Widget _body() {
+    final ex = _exercise!;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top bar
+          Row(
+            children: [
+              MwIconButton(icon: Icons.home_rounded, tooltip: 'Home', onPressed: () => context.go('/home')),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  ex.nodeTitle.toUpperCase(),
+                  maxLines: 1, overflow: TextOverflow.ellipsis,
+                  style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Difficulty + XP badge (XP shown as a static design element — wire
+          // to backend once the XP feature is integrated)
+          Row(
+            children: [
+              MwDifficultyBadge(level: ex.difficultyLevel),
+              const SizedBox(width: 8),
+              Text(ex.nodeTitle, style: AppText.body(size: 12, color: AppColors.muted)),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Question card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(AppRadii.xl),
+              border: Border.all(color: AppColors.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('SOLVE',
+                    style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2)),
+                const SizedBox(height: 8),
+                ShaderMask(
+                  shaderCallback: (rect) => const LinearGradient(
+                    colors: [AppColors.lime, AppColors.cyan],
+                  ).createShader(rect),
+                  child: Text(
+                    ex.questionText,
+                    style: AppText.display(size: 26, weight: FontWeight.w800, color: Colors.white, letterSpacing: -0.8)
+                        .copyWith(height: 1.15),
                   ),
                 ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Answer field
+          MwField(
+            label: 'Your answer',
+            controller: _answerController,
+            hint: 'Type your answer…',
+            keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(),
+          ),
+
+          const Spacer(),
+
+          MwButton(
+            label: _submitting ? 'Checking…' : 'Submit answer ✓',
+            onPressed: _submitting ? null : _submit,
+            loading: _submitting,
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _DifficultyChip extends StatelessWidget {
-  final int level;
-  const _DifficultyChip({required this.level});
+class _ErrorBlock extends StatelessWidget {
+  final String error;
+  final VoidCallback onRetry;
+  const _ErrorBlock({required this.error, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    final labels = {1: 'Easy', 2: 'Easy', 3: 'Medium', 4: 'Hard', 5: 'Hard'};
-    final colors = {1: Colors.green, 2: Colors.green, 3: Colors.orange, 4: Colors.red, 5: Colors.red};
-    return Chip(
-      label: Text(labels[level] ?? 'Level $level', style: const TextStyle(color: Colors.white, fontSize: 12)),
-      backgroundColor: colors[level] ?? Colors.grey,
-      padding: EdgeInsets.zero,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(error, textAlign: TextAlign.center, style: AppText.body(color: AppColors.pink)),
+            const SizedBox(height: 14),
+            MwButton(label: 'Retry', onPressed: onRetry),
+          ],
+        ),
+      ),
     );
   }
 }

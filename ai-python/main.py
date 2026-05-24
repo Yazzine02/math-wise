@@ -74,17 +74,45 @@ def get_ai_adapter()->AIEngineAdapter:
     return CloudAPIAdapter()
 
 #----FAST API ENDPOINTS----
+# Canonical knowledge-node codes, mirroring the seeded data in
+# backend-springboot/.../config/DataSeeder.java. We embed the list directly in
+# the prompt so the LLM picks one of these strings verbatim instead of
+# inventing a free-form title like "Multiplication" (which downstream services
+# cannot look up).
+VALID_WEAKNESS_NODES = [
+    "ARITH_ADDITION",
+    "ARITH_SUBTRACTION",
+    "ARITH_MULTIPLICATION",
+    "ARITH_DIVISION",
+    "FRACTIONS_SIMPLIFY",
+    "FRACTIONS_ADD_SUB",
+    "ALGEBRA_LINEAR",
+    "ALGEBRA_FACTORIZE",
+]
+
 @app.post("/evaluate-error")
 def evaluate_student_error(request: MathEvaluationRequest):
     # 1. Construct the strict prompt
+    nodes_block = "\n".join(f"- {code}" for code in VALID_WEAKNESS_NODES)
     system_prompt = f"""
-    You are an expert math tutor. Analyze the student's incorrect answer.
-    Equation: {request.equation}
-    Correct Answer: {request.correct_answer}
-    Student Answer: {request.student_answer}
-    
-    Return ONLY a JSON object with two keys: "weakness_node" (string) and "explanation" (string).
-    """
+You are an expert math tutor. Analyze the student's incorrect answer and
+identify the single fundamental concept they are weak in.
+
+Equation: {request.equation}
+Correct Answer: {request.correct_answer}
+Student Answer: {request.student_answer}
+
+The "weakness_node" field MUST be EXACTLY ONE of these codes, copied verbatim
+(uppercase, with underscores). Do NOT translate, paraphrase, or use the
+human-readable name:
+{nodes_block}
+
+Return ONLY a JSON object with two keys:
+- "weakness_node": (string) one of the codes above, exactly as written
+- "explanation":   (string) a brief, friendly tutor explanation of the mistake
+
+Do not include any text outside the JSON.
+"""
     
     # 2. Get the active adapter (Cloud or Local based on .env)
     ai_engine = get_ai_adapter()
