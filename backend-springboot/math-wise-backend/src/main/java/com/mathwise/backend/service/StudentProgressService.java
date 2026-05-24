@@ -5,9 +5,11 @@ import com.mathwise.backend.dto.WeaknessSummaryDto;
 import com.mathwise.backend.entity.Exercise;
 import com.mathwise.backend.entity.InteractionLog;
 import com.mathwise.backend.entity.KnowledgeNode;
+import com.mathwise.backend.event.ExercisePoolLowEvent;
 import com.mathwise.backend.repository.ExerciseRepository;
 import com.mathwise.backend.repository.InteractionLogRepository;
 import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,16 +59,19 @@ public class StudentProgressService {
     private final KnowledgeNodeRepository knowledgeNodeRepository;
     private final ExerciseRepository exerciseRepository;
     private final KnowledgeNodeResolver nodeResolver;
+    private final ApplicationEventPublisher eventPublisher;
     private final Random random = new Random();
 
     public StudentProgressService(InteractionLogRepository interactionLogRepository,
                                    KnowledgeNodeRepository knowledgeNodeRepository,
                                    ExerciseRepository exerciseRepository,
-                                   KnowledgeNodeResolver nodeResolver) {
+                                   KnowledgeNodeResolver nodeResolver,
+                                   ApplicationEventPublisher eventPublisher) {
         this.interactionLogRepository = interactionLogRepository;
         this.knowledgeNodeRepository = knowledgeNodeRepository;
         this.exerciseRepository = exerciseRepository;
         this.nodeResolver = nodeResolver;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -137,6 +142,15 @@ public class StudentProgressService {
         List<Exercise> exercises = exerciseRepository.findByKnowledgeNode(targetNode);
         if (exercises.isEmpty()) {
             throw new IllegalStateException("No exercises for node: " + targetNode.getNodeCode());
+        }
+
+        // Phase 8: fire-and-forget pool top-up if the pool for this node is
+        // running low. ExercisePoolListener picks the event up on a background
+        // thread, calls FastAPI's /generate-exercises (which itself falls back
+        // to deterministic templates if the LLM is unavailable), and persists
+        // the new exercises. The student's current request is unaffected.
+        if (exercises.size() < ExerciseGenerationService.MIN_POOL_SIZE) {
+            eventPublisher.publishEvent(new ExercisePoolLowEvent(targetNode.getNodeCode()));
         }
 
         Exercise chosen = exercises.get(random.nextInt(exercises.size()));
