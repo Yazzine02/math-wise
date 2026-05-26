@@ -8,7 +8,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+// Spring Boot 4 moved AutoConfigureMockMvc out of
+// `org.springframework.boot.test.autoconfigure.web.servlet` into
+// `org.springframework.boot.webmvc.test.autoconfigure`. Same pattern
+// as the RestTemplateBuilder relocation in Phase 2.
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.MediaType;

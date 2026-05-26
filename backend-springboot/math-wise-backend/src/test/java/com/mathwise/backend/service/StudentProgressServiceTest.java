@@ -153,8 +153,13 @@ class StudentProgressServiceTest {
         @DisplayName("serves the failing node when its prereq is solid")
         void serves_failing_node_when_prereq_solid() {
             // 5 failures on Division, 0 on its prereq (Multiplication).
+            // List.<Object[]>of(...) — explicit type witness is required because
+            // Java's overload resolution on List.of() collapses Object[] arguments
+            // to the varargs overload and infers List<Object> rather than
+            // List<Object[]>. Without the witness, the assignment to the
+            // findRecentTopWeaknessesByStudentId() return type fails to compile.
             when(interactionLogRepository.findRecentTopWeaknessesByStudentId(
-                    eq(studentId), any())).thenReturn(List.of(
+                    eq(studentId), any())).thenReturn(List.<Object[]>of(
                     new Object[]{"ARITH_DIVISION", 5L}
             ));
             when(nodeResolver.resolve("ARITH_DIVISION")).thenReturn(Optional.of(division));
@@ -177,7 +182,7 @@ class StudentProgressServiceTest {
             // addition has since been mastered. The engine should ignore
             // addition and go to division.
             when(interactionLogRepository.findRecentTopWeaknessesByStudentId(
-                    eq(studentId), any())).thenReturn(List.of(
+                    eq(studentId), any())).thenReturn(List.<Object[]>of(
                     new Object[]{"ARITH_ADDITION", 8L},
                     new Object[]{"ARITH_DIVISION", 3L}
             ));
@@ -209,7 +214,7 @@ class StudentProgressServiceTest {
         @DisplayName("returns top 3 weaknesses sorted by failure count, mastered ones excluded")
         void returns_top_three_minus_mastered() {
             when(interactionLogRepository.findRecentTopWeaknessesByStudentId(
-                    eq(studentId), any())).thenReturn(List.of(
+                    eq(studentId), any())).thenReturn(List.<Object[]>of(
                     new Object[]{"ARITH_ADDITION", 9L},      // mastered → drop
                     new Object[]{"ARITH_DIVISION", 5L},
                     new Object[]{"ARITH_MULTIPLICATION", 3L},
