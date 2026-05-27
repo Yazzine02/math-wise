@@ -28,7 +28,13 @@
     </scm>
     <properties>
         <java.version>21</java.version>
-        <testcontainers.version>1.20.4</testcontainers.version>
+        <!--
+          Bump Testcontainers above what Spring Boot 4.0.3 pins (1.20.4
+          ships docker-java 3.4.0 with default API 1.32; modern Docker
+          Desktop daemons require API >= 1.40 and reject older clients).
+          1.21.x bundles docker-java that negotiates a modern API.
+        -->
+        <testcontainers.version>1.21.3</testcontainers.version>
     </properties>
 
     <!--
@@ -146,6 +152,27 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <!--
+              Maven Failsafe — runs *IT tests during the `verify` phase.
+              The naming convention is conventional: Surefire (the default
+              test runner) picks up *Test.java, Failsafe picks up *IT.java.
+              This lets us cleanly separate fast unit tests (run on every
+              build via `./mvnw test`) from integration tests that need
+              Docker for Testcontainers (run via `./mvnw verify`).
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

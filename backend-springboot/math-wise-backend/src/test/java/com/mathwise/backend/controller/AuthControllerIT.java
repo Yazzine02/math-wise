@@ -1,6 +1,7 @@
 package com.mathwise.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mathwise.backend.TestcontainersConfiguration;
 import com.mathwise.backend.dto.LoginRequestDto;
 import com.mathwise.backend.dto.RegisterRequestDto;
 import com.mathwise.backend.repository.StudentRepository;
@@ -14,14 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 // as the RestTemplateBuilder relocation in Phase 2.
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.hamcrest.Matchers.notNullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -59,28 +55,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Testcontainers
+@Import(TestcontainersConfiguration.class)
 @DisplayName("AuthController — integration")
 class AuthControllerIT {
 
     /**
-     * One Postgres container per test class. Started before any test runs,
-     * stopped after they all finish. Fast subsequent tests reuse it.
+     * Postgres is provided by {@link TestcontainersConfiguration} as a
+     * Spring-managed {@code @ServiceConnection} bean — shared across every
+     * test class in this suite, so the container only starts once.
+     *
+     * <p>The JWT signing secret uses the placeholder default from
+     * {@code application.properties} (47 chars, well over the 32-byte
+     * minimum for HMAC-SHA256). No explicit override needed.
      */
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
-
-    /**
-     * Override the JWT secret so we don't accidentally depend on the
-     * development placeholder string from application.properties.
-     */
-    @DynamicPropertySource
-    static void overrideJwtSecret(DynamicPropertyRegistry registry) {
-        registry.add("jwt.secret",
-                () -> "test_only_secret_at_least_32_chars_long_to_satisfy_hmac_sha256_constraints");
-    }
-
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private StudentRepository studentRepository;

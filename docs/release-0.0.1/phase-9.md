@@ -174,13 +174,24 @@ structure of `lib/`. No extra config needed.
 
 ## 5. Running the suites
 
+The Spring Boot side is split via Maven naming conventions:
+
+| Phase | Picks up | Runner |
+|---|---|---|
+| `mvn test` (every build) | `*Test.java` — fast unit tests, no Docker, no DB | Surefire |
+| `mvn verify` (full check) | `*Test.java` + `*IT.java` — integration tests that need Docker | Surefire + Failsafe |
+
+This means contributors can run unit tests cheaply on every change
+without Docker installed; the integration tests run on CI or when
+explicitly asking for `verify`.
+
 ```bash
-# Spring Boot — unit + integration
+# Spring Boot — unit tests only (~1s, no Docker needed)
 cd backend-springboot/math-wise-backend
 ./mvnw test
 
-# Just the integration tests (slower, need Docker running)
-./mvnw test -Dtest='*IT'
+# Spring Boot — unit + integration (~30s first time, needs Docker running)
+./mvnw verify
 
 # FastAPI
 cd ai-python
@@ -192,8 +203,20 @@ cd frontend-flutter
 flutter test
 ```
 
-The first Spring Boot run takes ~30s because Testcontainers pulls the
-Postgres image. Subsequent runs are ~10s.
+The first `mvn verify` takes ~30s because Testcontainers pulls the
+`postgres:16` image. Subsequent runs reuse the cached image.
+
+### Why no placeholder smoke test
+
+Spring Initializr generated a `MathWiseBackendApplicationTests.contextLoads`
+with an empty body. Its purpose was a "does the context load?"
+smoke test — but once the project actually has a database, "loading"
+requires either a real DB or Testcontainers, and forcing Docker into
+the unit-test path defeats the speed of `mvn test`. The same coverage
+is provided by `AuthControllerIT` (the canonical integration test
+that proves the full context boots against a real Postgres), so the
+placeholder was deleted. Don't keep generated placeholders that test
+nothing — they create noise and false failures.
 
 ---
 
