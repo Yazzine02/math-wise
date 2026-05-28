@@ -1,0 +1,105 @@
+# .github/workflows/backend-ci.yml
+#
+# Spring Boot continuous integration.
+#
+# What this workflow demonstrates (the teaching part):
+#
+# 1. EVENT TRIGGERS — `on:` declares when this workflow runs. We listen for
+#    pushes to long-lived branches AND for every pull request. PR runs are
+#    crucial: they let reviewers see green checks before approving a merge.
+#
+# 2. PATH FILTERS — `paths:` makes this workflow run ONLY when files under
+#    backend-springboot/** change (plus the workflow file itself, so
+#    iterating on the YAML actually triggers it). A frontend-only PR
+#    doesn't waste a backend CI run.
+#
+# 3. JOB & STEPS — one `test` job, several steps. Steps run sequentially.
+#    If any step exits non-zero, the rest are skipped and the job fails.
+#
+# 4. RUNNER — `ubuntu-latest` is a GitHub-hosted disposable VM. Already
+#    has Docker, Git, common languages preinstalled. New VM per run.
+#
+# 5. CACHING — setup-java's `cache: maven` persists ~/.m2/repository
+#    between runs, so dependency downloads only happen when pom.xml changes.
+#    First run: ~3 min. Subsequent: ~30 s. Huge productivity win.
+#
+# 6. WHY `verify` AND NOT `test` — `./mvnw test` runs Surefire (unit tests)
+#    only. `./mvnw verify` ALSO runs Failsafe (integration tests like
+#    AuthControllerIT). Phase 9 set up that split deliberately.
+#
+# 7. TESTCONTAINERS IN CI — on GitHub-hosted Ubuntu runners Docker is
+#    pre-installed and accessible at /var/run/docker.sock the standard way,
+#    so Testcontainers `Just Works` without any of the macOS Desktop
+#    socket-redirect issues we burned an hour on locally.
+
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'backend-springboot/**'
+      - '.github/workflows/backend-ci.yml'
+  pull_request:
+    paths:
+      - 'backend-springboot/**'
+      - '.github/workflows/backend-ci.yml'
+
+# A note on concurrency control: if you push 3 commits to the same branch
+# in quick succession, by default GHA runs CI 3 times. `concurrency` cancels
+# in-progress runs when a newer one starts — saves runner minutes and gets
+# feedback on the latest commit faster.
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (JUnit + Testcontainers)
+    runs-on: ubuntu-latest
+    # Bail out aggressively — a stuck test should never hold a runner for an hour.
+    timeout-minutes: 15
+
+    # The workflow doesn't need any secrets and only reads the repo. Restricting
+    # GITHUB_TOKEN to read-only is a defense-in-depth hardening.
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        # Avoids `working-directory:` on every step.
+        working-directory: backend-springboot/math-wise-backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'    # Adoptium Temurin — the standard OpenJDK build
+          cache: maven               # persists ~/.m2 between runs
+
+      # Maven wrapper is checked in via mvnw — no need to install Maven on the runner.
+      # `-B` is "batch mode" — disables interactive prompts and ANSI colour escapes.
+      # `verify` runs Surefire (unit tests) AND Failsafe (integration tests).
+      - name: ./mvnw verify
+        run: ./mvnw -B verify
+
+      # Even on failure, publish the test reports. The `if:` is a step
+      # condition that overrides the default "skip remaining steps on failure".
+      # Browsing the report in the GHA UI makes debugging green-locally /
+      # red-on-CI mismatches much faster.
+      - name: Upload Surefire + Failsafe reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            backend-springboot/math-wise-backend/target/surefire-reports/
+            backend-springboot/math-wise-backend/target/failsafe-reports/
+          retention-days: 7
