@@ -1,0 +1,81 @@
+# .github/workflows/frontend-ci.yml
+#
+# Flutter continuous integration.
+#
+# What this workflow demonstrates that the others didn't:
+#
+# 1. THIRD-PARTY ACTIONS — `subosito/flutter-action@v2` is a
+#    community-maintained action (not from GitHub themselves). When you
+#    pull in third-party actions, pin them to a major version (`@v2`)
+#    rather than a floating ref (`@main`). The major version is a moving
+#    pointer to the latest non-breaking release, balancing safety with
+#    being able to receive bug fixes without re-pinning.
+#
+# 2. A THREE-STEP LINT/TEST FLOW — `pub get` → `analyze` → `test`. Static
+#    analysis catches a different class of bugs than tests do (unused
+#    imports, dead code, missing returns, etc.). Both matter.
+#
+# 3. PRE-INSTALLED LANGUAGE GAP — JDK and Python are baked into the GHA
+#    Ubuntu image. Flutter isn't, hence the action. Same pattern applies
+#    to Go, Rust, Ruby, Node — the GitHub Actions marketplace has a
+#    setup-<lang> action for nearly every language.
+
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'frontend-flutter/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    paths:
+      - 'frontend-flutter/**'
+      - '.github/workflows/frontend-ci.yml'
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Analyze + test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: frontend-flutter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          # `cache: true` caches the Flutter SDK itself between runs.
+          # Pub dependencies are cached separately by the action.
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      # `flutter analyze` is the static analyser. By default it exits
+      # non-zero on info/warnings/errors, so a single deprecation notice
+      # fails CI. If that becomes too strict you can pass
+      # `--no-fatal-warnings` or tune analysis_options.yaml.
+      - name: flutter analyze
+        run: flutter analyze
+
+      # `--reporter expanded` gives one line per test in the log, mirroring
+      # what `-v` does for pytest. Helpful when scanning a failed run.
+      - name: flutter test
+        run: flutter test --reporter expanded

@@ -4,9 +4,11 @@ import com.mathwise.backend.dto.AuthResponseDto;
 import com.mathwise.backend.dto.LoginRequestDto;
 import com.mathwise.backend.dto.RegisterRequestDto;
 import com.mathwise.backend.entity.Student;
+import com.mathwise.backend.exception.EmailAlreadyExistsException;
+import com.mathwise.backend.exception.InvalidCredentialsException;
 import com.mathwise.backend.repository.StudentRepository;
 import com.mathwise.backend.security.JwtUtil;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -15,57 +17,64 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
-// Kepp cross-origin verification open for local flutter testing. TO CHANGE
-@CrossOrigin(origins = "*")
 public class AuthController {
+
     private final StudentRepository studentRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    // IOC by constructor
-    public AuthController(StudentRepository studentRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthController(StudentRepository studentRepository,
+                           PasswordEncoder passwordEncoder,
+                           JwtUtil jwtUtil) {
         this.studentRepository = studentRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * Register a new student.
+     *
+     * <ul>
+     *   <li>{@code @Valid} triggers Bean Validation on the request body. Invalid
+     *       input becomes a {@code MethodArgumentNotValidException} → 400 with
+     *       field-level errors via {@link com.mathwise.backend.exception.GlobalExceptionHandler}.</li>
+     *   <li>Email collision throws {@link EmailAlreadyExistsException} → 409
+     *       + code {@code EMAIL_ALREADY_EXISTS}. The previous implementation
+     *       returned a raw {@code String} body which broke the uniform error
+     *       envelope used everywhere else.</li>
+     * </ul>
+     */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequestDto registerRequestDto) {
-        /*
-        To register a new student, we have to verify if they already exist. If they don't then
-        create the new user, save to db and generate jwt
-        */
-        if(studentRepository.findByEmail(registerRequestDto.getEmail()).isPresent()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Email already exists");
+    public ResponseEntity<AuthResponseDto> register(@Valid @RequestBody RegisterRequestDto request) {
+        if (studentRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new EmailAlreadyExistsException(request.getEmail());
         }
 
         Student student = new Student();
-        student.setEmail(registerRequestDto.getEmail());
-        student.setDisplayName(registerRequestDto.getDisplayName());
-        student.setPassword(passwordEncoder.encode(registerRequestDto.getPassword()));
-
+        student.setEmail(request.getEmail());
+        student.setDisplayName(request.getDisplayName());
+        student.setPassword(passwordEncoder.encode(request.getPassword()));
         studentRepository.save(student);
 
         String token = jwtUtil.generateToken(student.getEmail());
         return ResponseEntity.ok(new AuthResponseDto(token, student.getEmail(), student.getDisplayName()));
-
     }
 
+    /**
+     * Authenticate a student. {@link InvalidCredentialsException} is thrown
+     * for both "unknown email" and "wrong password" — leaking which one
+     * failed would help attackers enumerate registered emails.
+     */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequestDto) {
-        /*
-        To login a student, you need to find the user by mail, verify the hash of the provided password
-        with the actual hashed password stored in the db. Then give the response
-         */
-        Optional<Student> optionalStudent = studentRepository.findByEmail(loginRequestDto.getEmail());
-
-        if(optionalStudent.isEmpty()){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email or password");
+    public ResponseEntity<AuthResponseDto> login(@Valid @RequestBody LoginRequestDto request) {
+        Optional<Student> optionalStudent = studentRepository.findByEmail(request.getEmail());
+        if (optionalStudent.isEmpty()) {
+            throw new InvalidCredentialsException();
         }
 
         Student student = optionalStudent.get();
-        if(!passwordEncoder.matches(loginRequestDto.getPassword(), student.getPassword())){
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email or password");
+        if (!passwordEncoder.matches(request.getPassword(), student.getPassword())) {
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtUtil.generateToken(student.getEmail());

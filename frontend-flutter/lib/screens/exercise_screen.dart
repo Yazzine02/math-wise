@@ -6,12 +6,17 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../errors/api_exception.dart';
 import '../models/exercise.dart';
 import '../models/ai_feedback.dart';
+import '../providers/auth_provider.dart';
+import '../providers/dashboard_signal.dart';
 import '../services/exercise_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/error_view.dart';
 
 class ExerciseScreen extends StatefulWidget {
   final String? nodeCode;
@@ -25,7 +30,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   Exercise? _exercise;
   bool _loading = true;
   bool _submitting = false;
-  String? _error;
+  ApiException? _error;
   final _answerController = TextEditingController();
 
   @override
@@ -45,8 +50,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     try {
       final ex = await ExerciseService.getNextExercise(nodeCode: widget.nodeCode);
       if (mounted) setState(() { _exercise = ex; _loading = false; });
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    } on UnauthorizedException catch (_) {
+      if (mounted) await context.read<AuthProvider>().logout();
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _error = e; _loading = false; });
     }
   }
 
@@ -62,6 +69,13 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
         studentAnswer: answer,
       );
       if (!mounted) return;
+      // The submission changed something the dashboard cares about — a
+      // new InteractionLog row was written, which may have added a new
+      // weakness OR dissolved an existing one via the mastery check.
+      // Ping the signal so the home screen reloads, even if the user
+      // never navigates through a context.go('/home') that would
+      // re-mount it.
+      context.read<DashboardSignal>().invalidate();
       _answerController.clear();
       final wantsNext = await context.pushNamed<bool>('feedback', extra: fb);
       if (!mounted) return;
@@ -69,8 +83,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       if (wantsNext == true) {
         await _loadExercise();
       }
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _submitting = false; });
+    } on UnauthorizedException catch (_) {
+      if (mounted) await context.read<AuthProvider>().logout();
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _error = e; _submitting = false; });
     }
   }
 
@@ -80,7 +96,10 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
       child: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? _ErrorBlock(error: _error!, onRetry: _loadExercise)
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: ErrorView(error: _error!, onRetry: _loadExercise),
+                )
               : _body(),
     );
   }
@@ -173,25 +192,3 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   }
 }
 
-class _ErrorBlock extends StatelessWidget {
-  final String error;
-  final VoidCallback onRetry;
-  const _ErrorBlock({required this.error, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(error, textAlign: TextAlign.center, style: AppText.body(color: AppColors.pink)),
-            const SizedBox(height: 14),
-            MwButton(label: 'Retry', onPressed: onRetry),
-          ],
-        ),
-      ),
-    );
-  }
-}

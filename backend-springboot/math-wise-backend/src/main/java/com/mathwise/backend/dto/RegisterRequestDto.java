@@ -1,11 +1,23 @@
 package com.mathwise.backend.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 public class RegisterRequestDto {
+
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be a valid address")
     private String email;
+
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, max = 128, message = "Password must be between 8 and 128 characters")
     private String password;
+
     @JsonProperty("display_name")
+    @NotBlank(message = "Display name is required")
+    @Size(max = 50, message = "Display name must be 50 characters or fewer")
     private String displayName;
 
     public String getEmail() {

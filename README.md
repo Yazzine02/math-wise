@@ -1,5 +1,9 @@
 # Math-Wise
 
+[![Backend CI](https://github.com/Yazzine02/math-wise/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Yazzine02/math-wise/actions/workflows/backend-ci.yml)
+[![AI service CI](https://github.com/Yazzine02/math-wise/actions/workflows/ai-service-ci.yml/badge.svg)](https://github.com/Yazzine02/math-wise/actions/workflows/ai-service-ci.yml)
+[![Frontend CI](https://github.com/Yazzine02/math-wise/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/Yazzine02/math-wise/actions/workflows/frontend-ci.yml)
+
 An AI-powered mobile app that helps students get better at mathematics. The app identifies weaknesses by analysing incorrect answers with a local LLaMA model, then adapts which exercise to give next based on what the student struggles with most.
 
 ---

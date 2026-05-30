@@ -166,6 +166,12 @@ class MwField extends StatefulWidget {
   final void Function(String)? onSubmitted;
   final String? hint;
 
+  /// Inline per-field error. Renders a pink border on the input and shows the
+  /// message below in pink. Pass the value from a
+  /// `ValidationException.fieldErrors` map (Phase 5 wire format) for
+  /// per-input highlighting on auth/forms.
+  final String? errorText;
+
   const MwField({
     super.key,
     required this.label,
@@ -176,6 +182,7 @@ class MwField extends StatefulWidget {
     this.textCapitalization = TextCapitalization.none,
     this.onSubmitted,
     this.hint,
+    this.errorText,
   });
 
   @override
@@ -200,6 +207,17 @@ class _MwFieldState extends State<MwField> {
 
   @override
   Widget build(BuildContext context) {
+    // Visual precedence: error > focus > resting. An invalid input always
+    // shows pink — even while focused — so the user knows the value still
+    // hasn't been accepted.
+    final hasError = widget.errorText != null && widget.errorText!.isNotEmpty;
+    final Color borderColor = hasError
+        ? AppColors.pink
+        : (_focused ? AppColors.lime : AppColors.line);
+    final Color? glowColor = hasError
+        ? AppColors.pink
+        : (_focused ? AppColors.lime : null);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -208,14 +226,13 @@ class _MwFieldState extends State<MwField> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 150),
           decoration: BoxDecoration(
-            color: _focused ? AppColors.lime.withValues(alpha: 0.06) : AppColors.surface,
+            color: _focused && !hasError
+                ? AppColors.lime.withValues(alpha: 0.06)
+                : AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(
-              color: _focused ? AppColors.lime : AppColors.line,
-              width: 1.5,
-            ),
-            boxShadow: _focused
-                ? [BoxShadow(color: AppColors.lime.withValues(alpha: 0.18), blurRadius: 0, spreadRadius: 4)]
+            border: Border.all(color: borderColor, width: 1.5),
+            boxShadow: glowColor != null
+                ? [BoxShadow(color: glowColor.withValues(alpha: 0.18), blurRadius: 0, spreadRadius: 4)]
                 : null,
           ),
           child: TextField(
@@ -236,6 +253,21 @@ class _MwFieldState extends State<MwField> {
             ),
           ),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, size: 13, color: AppColors.pink),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  widget.errorText!,
+                  style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.pink),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }

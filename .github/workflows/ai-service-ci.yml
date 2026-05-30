@@ -1,0 +1,85 @@
+# .github/workflows/ai-service-ci.yml
+#
+# FastAPI continuous integration.
+#
+# This workflow is intentionally similar in shape to backend-ci.yml — the
+# same anatomy (event triggers, concurrency, job + steps, caching, artifact
+# upload) just adapted for Python and pytest. Recognising that pipelines
+# look mostly the same across stacks is what makes them feel less mysterious.
+#
+# What's different vs backend-ci.yml:
+#  • `actions/setup-python` instead of setup-java
+#  • Cache keyed on requirements-dev.txt, not pom.xml
+#  • pytest instead of Maven
+#  • Much faster overall (~30s) because there's no LLM call — we test the
+#    SymPy logic, the deterministic generators, and the answer-check
+#    helper in pure Python. The LLM is mocked out at the call sites.
+
+name: AI service CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+    paths:
+      - 'ai-python/**'
+      - '.github/workflows/ai-service-ci.yml'
+  pull_request:
+    paths:
+      - 'ai-python/**'
+      - '.github/workflows/ai-service-ci.yml'
+
+concurrency:
+  group: ai-service-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    permissions:
+      contents: read
+
+    defaults:
+      run:
+        working-directory: ai-python
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          # `cache-dependency-path` tells the cache action which file
+          # changes invalidate the cache. Without this, the cache key
+          # is too generic and you get cache misses or stale caches.
+          cache-dependency-path: ai-python/requirements-dev.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      # `-v` is verbose pytest output. On CI we want every test name in the
+      # log because if something fails, the log is the first place we look.
+      - name: pytest
+        run: pytest -v
+
+      # Pytest report upload: same `if: always()` pattern as the backend
+      # workflow. If the test fails and you want the JUnit XML report to
+      # feed into a coverage tool later, this is where it'd live.
+      # (Phase 9 didn't add JUnit-XML emission to pytest; the upload is
+      # a no-op for now but a placeholder for future coverage work.)
+      - name: Upload pytest reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-service-test-reports
+          path: ai-python/.pytest_cache/
+          retention-days: 7
+          if-no-files-found: ignore

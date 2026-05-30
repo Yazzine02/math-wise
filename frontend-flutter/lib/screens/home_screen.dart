@@ -9,11 +9,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../errors/api_exception.dart';
 import '../providers/auth_provider.dart';
+import '../providers/dashboard_signal.dart';
 import '../models/weakness_summary.dart';
 import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/error_view.dart';
 import '../widgets/mw_wordmark.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,12 +29,31 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   WeaknessSummary? _summary;
   bool _loading = true;
-  String? _error;
+  ApiException? _error;
+
+  /// Held so we can unregister the listener cleanly in dispose. The
+  /// signal fires from anywhere in the app (e.g. ExerciseScreen after a
+  /// submit) and triggers a fresh _load — so the dashboard stays
+  /// up-to-date even when the home screen was hidden under the
+  /// navigation stack the whole time.
+  late final DashboardSignal _dashboardSignal;
 
   @override
   void initState() {
     super.initState();
+    _dashboardSignal = context.read<DashboardSignal>();
+    _dashboardSignal.addListener(_onDashboardInvalidated);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _dashboardSignal.removeListener(_onDashboardInvalidated);
+    super.dispose();
+  }
+
+  void _onDashboardInvalidated() {
+    if (mounted) _load();
   }
 
   Future<void> _load() async {
@@ -39,8 +61,11 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final s = await ProgressService.getWeaknesses();
       if (mounted) setState(() { _summary = s; _loading = false; });
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    } on UnauthorizedException catch (_) {
+      // Token expired / invalid. Bounce to /login via AuthProvider.
+      if (mounted) await context.read<AuthProvider>().logout();
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _error = e; _loading = false; });
     }
   }
 
@@ -113,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Center(child: CircularProgressIndicator()),
               )
             else if (_error != null)
-              _ErrorBlock(message: _error!, onRetry: _load)
+              ErrorView(error: _error!, onRetry: _load)
             else if (_summary == null || _summary!.weaknesses.isEmpty)
               const _EmptyWeaknessBlock()
             else
@@ -343,32 +368,3 @@ class _EmptyWeaknessBlock extends StatelessWidget {
   }
 }
 
-class _ErrorBlock extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  const _ErrorBlock({required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.pink.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border.all(color: AppColors.pink.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(message, style: AppText.body(size: 12, color: AppColors.pink)),
-          const SizedBox(height: 8),
-          TextButton(
-            onPressed: onRetry,
-            style: TextButton.styleFrom(foregroundColor: AppColors.lime),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-}

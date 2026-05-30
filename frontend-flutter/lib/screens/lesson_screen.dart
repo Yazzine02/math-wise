@@ -5,11 +5,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../errors/api_exception.dart';
 import '../models/lesson.dart';
+import '../providers/auth_provider.dart';
 import '../services/course_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
+import '../widgets/error_view.dart';
 
 class LessonScreen extends StatefulWidget {
   final String nodeCode;
@@ -28,6 +32,10 @@ class _LessonScreenState extends State<LessonScreen> {
     _future = CourseService.getLesson(widget.nodeCode);
   }
 
+  void _reload() {
+    setState(() => _future = CourseService.getLesson(widget.nodeCode));
+  }
+
   @override
   Widget build(BuildContext context) {
     return MwScaffold(
@@ -38,11 +46,20 @@ class _LessonScreenState extends State<LessonScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snap.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text('Failed to load lesson: ${snap.error}',
-                    textAlign: TextAlign.center, style: AppText.body(color: AppColors.pink)),
+            final err = snap.error;
+            if (err is UnauthorizedException) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                context.read<AuthProvider>().logout();
+              });
+              return const SizedBox.shrink();
+            }
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: ErrorView(
+                error: err is ApiException
+                    ? err
+                    : ApiException(message: err.toString()),
+                onRetry: _reload,
               ),
             );
           }

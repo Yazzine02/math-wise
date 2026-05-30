@@ -9,11 +9,15 @@ class AiFeedback {
     required this.isCorrect,
   });
 
-  factory AiFeedback.fromJson(Map<String, dynamic> json, {required bool isCorrect}) {
+  /// Reads server-authoritative correctness from `is_correct` in the response.
+  /// Spring Boot delegates the decision to FastAPI's SymPy-backed
+  /// `/check-answer` endpoint, so this is the only place where correctness is
+  /// determined — Flutter must not run its own string comparison.
+  factory AiFeedback.fromJson(Map<String, dynamic> json) {
     return AiFeedback(
       weaknessNode: json['weakness_node'] as String? ?? '',
       explanation: json['explanation'] as String? ?? '',
-      isCorrect: isCorrect,
+      isCorrect: json['is_correct'] as bool? ?? false,
     );
   }
 }

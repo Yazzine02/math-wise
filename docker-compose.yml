@@ -1,3 +1,6 @@
+# Values come from a local `.env` file in this directory. The `${VAR:-default}`
+# syntax provides safe fallbacks so `docker compose up` works out of the box
+# without configuration. See `.env.example` for the full list of variables.
 version: '3.8'
 
 services:
@@ -5,11 +8,11 @@ services:
     image: postgres:16
     container_name: mathwise-postgres
     environment:
-      POSTGRES_USER: db_user
-      POSTGRES_PASSWORD: 0
-      POSTGRES_DB: mathwise_db
+      POSTGRES_USER: ${DB_USER:-db_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-0}
+      POSTGRES_DB: ${DB_NAME:-mathwise_db}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - mathwise-pg-data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -18,8 +21,8 @@ services:
     image: dpage/pgadmin4
     container_name: mathwise-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@mathwise.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@mathwise.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     ports:
       - "5050:80"
     depends_on:
@@ -40,9 +43,9 @@ services:
       context: ./ai-python
     container_name: mathwise-ai
     environment:
-      AI_MODE: local
-      MODEL_URL: http://ollama:11434
-      MODEL_NAME: llama3.2:3b
+      AI_MODE: ${AI_MODE:-local}
+      MODEL_URL: ${MODEL_URL:-http://ollama:11434}
+      MODEL_NAME: ${MODEL_NAME:-llama3.2:3b}
     ports:
       - "8000:8000"
     depends_on:

@@ -10,4 +10,10 @@ import java.util.UUID;
 public interface ExerciseRepository extends JpaRepository<Exercise, UUID> {
     List<Exercise> findByKnowledgeNode(KnowledgeNode knowledgeNode);
     List<Exercise> findByKnowledgeNodeNodeCode(String nodeCode);
+
+    /**
+     * Cheap pool-size check for the Phase 8 generation pipeline. Avoids
+     * loading every Exercise just to count them.
+     */
+    long countByKnowledgeNode(KnowledgeNode knowledgeNode);
 }
