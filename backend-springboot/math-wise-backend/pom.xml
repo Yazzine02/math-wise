@@ -34,7 +34,7 @@
           Desktop daemons require API >= 1.40 and reject older clients).
           1.21.x bundles docker-java that negotiates a modern API.
         -->
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>2.0.5</testcontainers.version>
     </properties>
 
     <!--
