@@ -4,5 +4,5 @@
 -r requirements.txt
 
 pytest==8.3.4
-pytest-asyncio==0.25.2     # only needed if we ever test async endpoints
+pytest-asyncio==1.4.0     # only needed if we ever test async endpoints
 httpx==0.28.1              # used by FastAPI's TestClient under the hood
