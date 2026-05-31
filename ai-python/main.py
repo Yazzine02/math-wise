@@ -9,10 +9,16 @@ from sympy.parsing.sympy_parser import (
     convert_xor,
 )
 import exercise_templates
-import requests
-import os
-import json
 import logging
+
+# Phase 11 (RAG cherry-pick) — adapter, schemas, diagnostician and retriever
+# moved into dedicated modules. The /evaluate-error endpoint below now
+# delegates prompt construction + post-validation to evaluation/diagnostician
+# and pulls relevant course excerpts from rag/retriever before calling the LLM.
+from adapters.ai_adapters import get_ai_adapter
+from evaluation.diagnostician import diagnose
+from models.schemas import VALID_WEAKNESS_NODES, VerificationResult
+from rag.retriever import retrieve_excerpts
 
 #Loading environment variables using python-dotenv
 load_dotenv()
@@ -55,158 +61,73 @@ class GenerateExercisesResponse(BaseModel):
     rejected_count: int       # how many LLM candidates failed validation
     used_fallback: bool       # true ⇒ deterministic templates produced these
 
-#----ADAPTER----
-# All adapters have to implement the evaluate_student_error method
-class AIEngineAdapter:
-    def evaluate_student_error(self, prompt:str)-> dict:
-        raise NotImplementedError("Subclasses must implement the evaluate_student_error method.")
-
-class CloudAPIAdapter(AIEngineAdapter):
-    """Adapter for online cloud API"""
-    def __init__(self):
-        # Use os directly thanks to load_dotenv, provided by python-dotenv depandency
-        self.api_key=os.getenv("CLOUD_API_KEY")
-        self.url=os.getenv("CLOUD_API_URI")
-
-    def evaluate_student_error(self, prompt:str)->dict:
-        print("Evaluating using your Cloud API")
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json"
-        }
-        payload = {
-            "model": "fast-cloud-model",
-            "messages": [{"role": "user", "content": prompt}]
-        }
-        try:
-            response=requests.post(self.url, headers=headers, json=payload)
-            data = response.json()
-            return json.loads(data['choices'][0]['message']['content'])
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Cloud API failed: {str(e)}")
-        
-class LocalModelAdapter(AIEngineAdapter):
-    def __init__(self):
-        self.url=os.getenv("MODEL_URL")
-        self.model=os.getenv("MODEL_NAME")
-    
-    def evaluate_student_error(self, prompt: str) -> dict:
-        print("Evaluating using LOCAL OLLAMA MODEL...")
-        payload = {
-            "model": self.model,
-            "prompt": prompt,
-            "stream": False,
-            "format": "json"
-        }
-        try:
-            response = requests.post(f"{self.url}/api/generate", json=payload)
-            data = response.json()
-            return json.loads(data['response'])
-        except Exception as e:
-            raise HTTPException(status_code=500, detail="Ensure Ollama is running locally. " + str(e))
-
-#----FACTORY----
-def get_ai_adapter()->AIEngineAdapter:
-    mode=os.getenv("AI_MODE").lower()
-    if mode=="local":
-        return LocalModelAdapter()
-    return CloudAPIAdapter()
+# Adapter classes and get_ai_adapter() factory live in adapters/ai_adapters.py.
+# VALID_WEAKNESS_NODES (the canonical 8-node taxonomy mirroring DataSeeder.java)
+# lives in models/schemas.py.
 
 #----FAST API ENDPOINTS----
-# Canonical knowledge-node codes, mirroring the seeded data in
-# backend-springboot/.../config/DataSeeder.java. We embed the list directly in
-# the prompt so the LLM picks one of these strings verbatim instead of
-# inventing a free-form title like "Multiplication" (which downstream services
-# cannot look up).
-VALID_WEAKNESS_NODES = [
-    "ARITH_ADDITION",
-    "ARITH_SUBTRACTION",
-    "ARITH_MULTIPLICATION",
-    "ARITH_DIVISION",
-    "FRACTIONS_SIMPLIFY",
-    "FRACTIONS_ADD_SUB",
-    "ALGEBRA_LINEAR",
-    "ALGEBRA_FACTORIZE",
-]
+
+@app.get("/health")
+def health() -> dict:
+    """Lightweight liveness probe. Returns immediately without touching the
+    LLM or Chroma — used by Spring Boot's startup check and any future k8s
+    liveness/readiness probe."""
+    return {"status": "ok"}
+
 
 @app.post("/evaluate-error")
 def evaluate_student_error(request: MathEvaluationRequest):
-    # 1. Construct the prompt
-    nodes_block = "\n".join(f"- {code}" for code in VALID_WEAKNESS_NODES)
-    topic_block = (
-        f"Topic being tested: {request.node_code}"
-        if request.node_code else "Topic being tested: (unspecified)"
+    """
+    Diagnose WHY a student got an answer wrong.
+
+    Spring Boot's AiEvaluationService calls this only after
+    /check-answer has already returned is_correct=False, so we treat the
+    answer as wrong by construction here.
+
+    External wire format is preserved verbatim — Spring Boot still sees
+    `{"weakness_node": "...", "explanation": "..."}` — but the internal
+    pipeline is now:
+        verification (from request) → RAG excerpts (rag/retriever)
+        → structured prompt (evaluation/diagnostician) → LLM call
+        → weakness_node post-validation
+    The post-validation step rescues hallucinated codes by falling back
+    to the topic node (or the first valid code) and emitting a warning,
+    so we never return a code that KnowledgeNodeResolver can't look up.
+    """
+    verification = VerificationResult(
+        correct=False,
+        expected_str=request.correct_answer,
+        student_str=request.student_answer,
+        error_detail=(
+            f"Expected: {request.correct_answer}. "
+            f"Student wrote: {request.student_answer}."
+        ),
     )
-    prereqs_block = (
-        "Formal prerequisites in the curriculum: " + ", ".join(request.prerequisite_codes)
-        if request.prerequisite_codes
-        else "Formal prerequisites in the curriculum: (none — this is a foundational topic)"
+
+    rag_excerpts = retrieve_excerpts(
+        query=f"{request.equation} student wrote {request.student_answer}",
+        node_code=request.node_code,
     )
 
-    system_prompt = f"""
-You are an expert math tutor analyzing why a student got an answer wrong.
-Your job is to identify the SPECIFIC underlying mistake, not just the topic.
-
-Question: {request.equation}
-Correct answer: {request.correct_answer}
-Student's answer: {request.student_answer}
-{topic_block}
-{prereqs_block}
-
-REASON STEP BY STEP. Mentally reconstruct the sequence of operations the
-student most likely performed to reach their answer. Identify the FIRST
-step where they went wrong.
-
-The "weakness_node" should reflect the concept involved in THAT specific
-erroneous step — which is very often a PREREQUISITE skill, not the topic
-itself. Solving a linear equation requires addition, subtraction,
-multiplication, and division; a slip in any of those is the real weakness
-even though the question looked like an "algebra" question.
-
-──── WORKED EXAMPLE ────
-  Question: "Solve for x: 3x - 4 = 11"
-  Correct answer: 5
-  Student's answer: 3
-  Topic: ALGEBRA_LINEAR
-
-  Step-by-step reconstruction of what the student likely did:
-    1. Started with: 3x - 4 = 11
-    2. Added 4 to both sides:  3x = 15           (correct)
-    3. Divided both sides by 3: x = 15 / 3       (correct setup)
-    4. Computed: x = 3                           (WRONG: 15 / 3 = 5, not 3)
-
-  The algebra moves (steps 2 and 3) were perfect. The slip is in step 4,
-  a pure arithmetic-division error.
-  → weakness_node: ARITH_DIVISION
-
-──── INSTRUCTIONS ────
-The "weakness_node" MUST be EXACTLY ONE of these codes, copied verbatim
-(uppercase, with underscores). Do NOT translate, paraphrase, or use the
-human-readable name:
-{nodes_block}
-
-Prefer a prerequisite code over the topic code itself when the error is
-purely computational. Only attribute the weakness to the topic itself if
-the student misunderstood the *method* (e.g. didn't isolate x correctly,
-didn't apply the distributive property), not the arithmetic.
-
-Return ONLY a JSON object with two keys:
-- "weakness_node": (string) one of the codes above, exactly as written
-- "explanation":   (string) a brief, friendly tutor explanation that
-                   names the specific arithmetic mistake
-
-Do not include any text outside the JSON.
-"""
-    
-    # 2. Get the active adapter (Cloud or Local based on .env)
-    ai_engine = get_ai_adapter()
-    
-    # 3. Process the request
     try:
-        result_json = ai_engine.evaluate_student_error(system_prompt)
-        return result_json
+        result = diagnose(
+            equation=request.equation,
+            verification=verification,
+            topic_node=request.node_code,
+            prerequisite_codes=request.prerequisite_codes,
+            rag_excerpts=rag_excerpts,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+    # Map back to the legacy Spring Boot wire format (`weakness_node`, not
+    # `weakness_node_code`). AiFeedbackDto expects exactly these two keys.
+    return {
+        "weakness_node": result.weakness_node_code,
+        "explanation": result.explanation,
+    }
 
 
 # ----SYMBOLIC ANSWER CHECK----
