@@ -69,20 +69,29 @@ class TestSymbolicEquivalence:
         assert is_correct is False
 
 
-class TestFallbackPath:
-    """Cases SymPy can't parse (used_symbolic_check=False, string fallback)."""
+class TestNonNumericInput:
+    """Alphabetic answers still travel the symbolic path, not the string
+    fallback. SymPy's ``split_symbols`` transformation (bundled into
+    ``implicit_multiplication_application``) parses a word like ``"hello"``
+    as a product of single-letter symbols — ``h*e*l*l*o`` → ``e*h*l**2*o`` —
+    so ``parse_expr`` never raises. Equality is therefore decided
+    symbolically (used_symbolic_check=True); the string-compare branch only
+    triggers on genuinely unparseable input.
+    """
 
-    def test_matching_words_pass_via_string_compare(self):
-        # Neither side is a math expression — fall back to case-insensitive
-        # trimmed equality.
+    def test_matching_words_compare_equal(self):
+        # "hello" and "Hello" both lower-case to "hello" and parse to the
+        # same symbol product, so simplify(diff) == 0 on the symbolic path.
         is_correct, used_symbolic = _answers_equivalent("hello", "Hello")
         assert is_correct is True
-        assert used_symbolic is False
+        assert used_symbolic is True
 
-    def test_non_matching_strings_are_rejected(self):
+    def test_non_matching_words_are_rejected(self):
+        # "hello" → e*h*l**2*o, "world" → d*l*o*r*w — distinct products, so
+        # the symbolic path correctly reports them as not equivalent.
         is_correct, used_symbolic = _answers_equivalent("hello", "world")
         assert is_correct is False
-        assert used_symbolic is False
+        assert used_symbolic is True
 
 
 class TestEdgeCases:

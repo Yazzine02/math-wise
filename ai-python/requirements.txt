@@ -43,3 +43,11 @@ urllib3==2.6.3
 uvicorn==0.41.0
 watchfiles==1.1.1
 websockets==16.0
+
+# ---- Phase 11 (RAG cherry-pick) -------------------------------------------
+# Course-corpus retrieval — pulled into the diagnostician prompt so the LLM
+# paraphrases curated content instead of inventing explanations from scratch.
+# `sentence-transformers` brings torch as a transitive dep (~2 GB); a one-time
+# install cost we pay so the embedding model can run fully offline.
+chromadb==0.5.23
+sentence-transformers==3.3.1
