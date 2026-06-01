@@ -107,54 +107,52 @@ class ApiException implements Exception {
 /// reached the server, so there's no envelope to parse.
 class NetworkException extends ApiException {
   NetworkException({
-    String message = "You're offline. Check your connection and try again.",
-  }) : super(message: message);
+    super.message = "You're offline. Check your connection and try again.",
+  });
 }
 
 /// HTTP 401. Token expired or credentials wrong. Authenticated callers
 /// should typically force a logout.
 class UnauthorizedException extends ApiException {
-  UnauthorizedException({required String message, String? code})
-      : super(status: 401, code: code, message: message);
+  UnauthorizedException({required super.message, super.code})
+      : super(status: 401);
 }
 
 /// HTTP 403. Authenticated but not authorised for this resource.
 class ForbiddenException extends ApiException {
-  ForbiddenException({required String message, String? code})
-      : super(status: 403, code: code, message: message);
+  ForbiddenException({required super.message, super.code})
+      : super(status: 403);
 }
 
 class NotFoundException extends ApiException {
-  NotFoundException({required String message, String? code})
-      : super(status: 404, code: code, message: message);
+  NotFoundException({required super.message, super.code})
+      : super(status: 404);
 }
 
 /// HTTP 409. Used for "email already exists" on registration.
 class ConflictException extends ApiException {
-  ConflictException({required String message, String? code})
-      : super(status: 409, code: code, message: message);
+  ConflictException({required super.message, super.code})
+      : super(status: 409);
 }
 
 /// HTTP 400 + code `VALIDATION_FAILED`. Always carries a non-null
 /// [fieldErrors] map so screens can highlight specific inputs.
 class ValidationException extends ApiException {
   ValidationException({
-    required String message,
-    required Map<String, String> fieldErrors,
+    required super.message,
+    required Map<String, String> super.fieldErrors,
   }) : super(
             status: 400,
-            code: 'VALIDATION_FAILED',
-            message: message,
-            fieldErrors: fieldErrors);
+            code: 'VALIDATION_FAILED');
 }
 
 /// HTTP 5xx — something broke server-side.
 class ServerException extends ApiException {
   ServerException({
-    required String message,
-    String? code,
-    required int status,
-  }) : super(status: status, code: code, message: message);
+    required super.message,
+    super.code,
+    required int super.status,
+  });
 }
 
 /// HTTP 502/503. Specifically the AI service path: distinguished from
@@ -162,8 +160,8 @@ class ServerException extends ApiException {
 /// "something broke."
 class ServiceUnavailableException extends ServerException {
   ServiceUnavailableException({
-    required String message,
-    String? code,
-    required int status,
-  }) : super(message: message, code: code, status: status);
+    required super.message,
+    super.code,
+    required super.status,
+  });
 }
