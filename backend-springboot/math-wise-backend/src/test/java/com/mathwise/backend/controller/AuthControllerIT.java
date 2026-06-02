@@ -69,8 +69,16 @@ class AuthControllerIT {
      * minimum for HMAC-SHA256). No explicit override needed.
      */
     @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
     @Autowired private StudentRepository studentRepository;
+
+    // Spring Boot 4 standardises on Jackson 3 and no longer registers a
+    // com.fasterxml.jackson.databind.ObjectMapper (Jackson 2) bean by default,
+    // so @Autowired-ing this type fails with "No qualifying bean". This test
+    // only needs to serialise request DTOs to JSON, so we construct a plain
+    // Jackson 2 mapper directly (jackson-databind is on the test classpath via
+    // jjwt-jackson). It still honours the DTOs' @JsonProperty annotations
+    // (e.g. display_name), which is all the request bodies rely on.
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @BeforeEach
     void resetDb() {
