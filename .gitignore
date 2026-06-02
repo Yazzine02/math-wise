@@ -1,0 +1,39 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Claude Code
+.claude/
+
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Maven
+backend-springboot/**/target/
+
+# Spring Boot
+backend-springboot/**/application-local.properties
+
+# Python
+ai-python/.env
+ai-python/__pycache__/
+ai-python/*.pyc
+ai-python/*.pyo
+ai-python/.venv/
+ai-python/venv/
+
+# Flutter / Dart
+frontend-flutter/.dart_tool/
+frontend-flutter/.flutter-plugins
+frontend-flutter/.flutter-plugins-dependencies
+frontend-flutter/build/
+frontend-flutter/.pub-cache/
+frontend-flutter/.pub/
+
+# Environment files (never commit secrets)
+.env
+*.env.local

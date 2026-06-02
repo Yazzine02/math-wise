@@ -1,0 +1,67 @@
+# .github/dependabot.yml
+#
+# GitHub's built-in dependency updater. Reads this config and opens PRs to
+# bump your dependencies on the schedule below. Each PR runs through the
+# normal CI workflows, so a breaking update fails its own PR.
+#
+# Why this matters more than it looks:
+#   • Catches CVEs without you watching mailing lists.
+#   • Forces you to keep current — staying 2 majors behind on a framework
+#     turns small upgrades into giant terrifying migrations later.
+#   • Demonstrates supply-chain awareness on the portfolio.
+#
+# Customisation knobs you may want later: `reviewers`, `labels`,
+# `commit-message` prefix, `ignore` for transitive deps you can't control.
+
+version: 2
+updates:
+
+  # ── Maven (Spring Boot backend) ───────────────────────────────────────
+  - package-ecosystem: maven
+    directory: /backend-springboot/math-wise-backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    # Group minor + patch bumps into a single PR per ecosystem; only
+    # majors get their own PR (so they get reviewed more deliberately).
+    groups:
+      maven-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── pip (FastAPI service) ─────────────────────────────────────────────
+  - package-ecosystem: pip
+    directory: /ai-python
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      pip-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── pub (Flutter app) ─────────────────────────────────────────────────
+  - package-ecosystem: pub
+    directory: /frontend-flutter
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
+    groups:
+      pub-minor-patch:
+        update-types: ["minor", "patch"]
+
+  # ── GitHub Actions themselves ─────────────────────────────────────────
+  # actions/checkout@v4, subosito/flutter-action@v2, etc. — these get
+  # security-patched too. Dependabot keeps the .github/workflows/*.yml
+  # versions current.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+    open-pull-requests-limit: 5
