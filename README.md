@@ -1,4 +1,4 @@
-# Math-Wise
+# MathExp
 
 [![Backend CI](https://github.com/Yazzine02/math-wise/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Yazzine02/math-wise/actions/workflows/backend-ci.yml)
 [![AI service CI](https://github.com/Yazzine02/math-wise/actions/workflows/ai-service-ci.yml/badge.svg)](https://github.com/Yazzine02/math-wise/actions/workflows/ai-service-ci.yml)

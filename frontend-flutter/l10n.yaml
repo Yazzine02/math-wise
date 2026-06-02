@@ -1,0 +1,7 @@
+# Flutter gen-l10n configuration. Generated AppLocalizations + per-locale
+# classes are written into lib/l10n/ (importable as
+# `package:math_wise_frontend/l10n/app_localizations.dart` or relatively).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-dir: lib/l10n

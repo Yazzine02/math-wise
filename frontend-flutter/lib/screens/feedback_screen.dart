@@ -1,15 +1,15 @@
 // lib/screens/feedback_screen.dart
 //
 // Result screen — correct or incorrect. Big banner, weakness chip and AI
-// explanation when wrong; a celebratory block when right. The current
-// branch's AiFeedback shape doesn't include the user's original answer or
-// the correct answer separately, so we only show the AI explanation. When
-// the backend adds those fields, drop them into the "You / Correct" cards
-// hidden behind the `kShowAnswerCompare` flag below.
+// explanation when wrong; a celebratory block when right. The AI explanation
+// text is server-supplied (kept in the language the model produced); the
+// chrome and the weakness label are localized.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../models/ai_feedback.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
@@ -20,6 +20,7 @@ class FeedbackScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final isCorrect = feedback.isCorrect;
     return MwScaffold(
       child: Padding(
@@ -32,7 +33,7 @@ class FeedbackScreen extends StatelessWidget {
                 MwIconButton(icon: Icons.arrow_back_rounded, onPressed: () => context.pop()),
                 const SizedBox(width: 10),
                 Text(
-                  'RESULT',
+                  l.result,
                   style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
                 ),
               ],
@@ -43,12 +44,12 @@ class FeedbackScreen extends StatelessWidget {
 
             const Spacer(),
             MwButton(
-              label: 'Next exercise  →',
+              label: l.nextExercise,
               onPressed: () => context.pop(true),
             ),
             const SizedBox(height: 10),
             MwButton(
-              label: 'Back to dashboard',
+              label: l.backToDashboard,
               style: MwButtonStyle.ghost,
               onPressed: () => context.go('/home'),
             ),
@@ -65,6 +66,7 @@ class _CorrectBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Expanded(
       child: Center(
         child: Column(
@@ -82,17 +84,17 @@ class _CorrectBlock extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Text(
-              'CORRECT!',
+              l.correctKicker,
               style: AppText.label(size: 12, weight: FontWeight.w800, color: AppColors.lime, letterSpacing: 2),
             ),
             const SizedBox(height: 8),
             Text(
-              'Nailed it.',
+              l.correctTitle,
               style: AppText.display(size: 36, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -1.2),
             ),
             const SizedBox(height: 6),
             Text(
-              'Keep the streak going.',
+              l.correctSubtitle,
               style: AppText.body(size: 14, color: AppColors.muted),
             ),
           ],
@@ -108,6 +110,7 @@ class _WrongBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Expanded(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -133,10 +136,10 @@ class _WrongBlock extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Not quite right',
+                      Text(l.wrongTitle,
                           style: AppText.title(size: 18, weight: FontWeight.w800, color: AppColors.pink)),
                       const SizedBox(height: 2),
-                      Text('Let\'s see what happened.',
+                      Text(l.wrongSubtitle,
                           style: AppText.body(size: 12, color: AppColors.pink.withValues(alpha: 0.85))),
                     ],
                   ),
@@ -148,7 +151,7 @@ class _WrongBlock extends StatelessWidget {
           if (feedback.weaknessNode.isNotEmpty) ...[
             const SizedBox(height: 22),
             Text(
-              'WEAKNESS LOGGED',
+              l.weaknessLogged,
               style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
             ),
             const SizedBox(height: 8),
@@ -161,7 +164,7 @@ class _WrongBlock extends StatelessWidget {
                   gradient: const LinearGradient(colors: [AppColors.pink, AppColors.violet]),
                 ),
                 child: Text(
-                  '◆  ${feedback.weaknessNode}',
+                  '◆  ${localizedNodeTitle(l, feedback.weaknessNode, feedback.weaknessNode)}',
                   style: AppText.title(size: 13, weight: FontWeight.w800, color: AppColors.ink),
                 ),
               ),
@@ -170,7 +173,7 @@ class _WrongBlock extends StatelessWidget {
 
           if (feedback.explanation.isNotEmpty) ...[
             const SizedBox(height: 22),
-            Text("Here's what happened",
+            Text(l.explanationHeader,
                 style: AppText.title(size: 14, weight: FontWeight.w800, color: AppColors.ink)),
             const SizedBox(height: 8),
             Container(

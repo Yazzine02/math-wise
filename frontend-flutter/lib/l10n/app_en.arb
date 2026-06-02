@@ -1,0 +1,116 @@
+{
+  "@@locale": "en",
+
+  "fieldEmail": "Email",
+  "fieldPassword": "Password",
+  "fieldDisplayName": "Display name",
+  "tryAgain": "Try again",
+  "logout": "Logout",
+  "navHome": "Home",
+
+  "loginTitleLine1": "Sign in &\nlevel up",
+  "loginTitleLine2": "your math.",
+  "loginEmailHint": "you@school.edu",
+  "loginLoading": "Signing in…",
+  "loginCta": "Let's go  →",
+  "loginNoAccount": "New player? ",
+  "loginCreateAccount": "Create account",
+
+  "registerStep": "1 of 1",
+  "registerKicker": "CREATE YOUR PROFILE",
+  "registerTitleLine1": "What should we",
+  "registerTitleLine2": "call you?",
+  "registerCta": "Continue  →",
+  "registerHaveAccount": "Already have an account? ",
+  "registerSignIn": "Sign in",
+
+  "greeting": "Hi, {name}!",
+  "@greeting": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "greetingNoName": "Hello!",
+  "homeSubtitle": "Ready to practice some math?",
+  "weakAreasTitle": "Your weak areas",
+  "aiDiagnosed": "AI-DIAGNOSED",
+  "practiceKicker": "ADAPTIVE PRACTICE · TUNED TO YOU",
+  "startPractice": "Start practice",
+  "begin": "Begin",
+  "browseCourses": "Browse courses",
+  "browseCoursesSubtitle": "8 concepts · learn before you practice",
+  "mistakeCount": "{count, plural, =1{1 mistake} other{{count} mistakes}}",
+  "@mistakeCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "noWeaknesses": "No weaknesses detected yet. Start practising — the AI will diagnose what to focus on.",
+
+  "solve": "SOLVE",
+  "yourAnswer": "Your answer",
+  "answerHint": "Type your answer…",
+  "submitting": "Checking…",
+  "submitAnswer": "Submit answer ✓",
+
+  "result": "RESULT",
+  "correctKicker": "CORRECT!",
+  "correctTitle": "Nailed it.",
+  "correctSubtitle": "Keep the streak going.",
+  "wrongTitle": "Not quite right",
+  "wrongSubtitle": "Let's see what happened.",
+  "weaknessLogged": "WEAKNESS LOGGED",
+  "explanationHeader": "Here's what happened",
+  "nextExercise": "Next exercise  →",
+  "backToDashboard": "Back to dashboard",
+
+  "coursesTitle": "Courses",
+  "topicsCount": "{count} TOPICS",
+  "@topicsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "coursesSubtitle": "Bite-sized lessons explaining each concept before you practice it.",
+  "coursesEmpty": "No courses available yet.",
+  "startLesson": "Start lesson",
+
+  "lessonKicker": "LESSON",
+  "lessonConcept": "The concept",
+  "lessonExamples": "Worked examples",
+  "lessonProTip": "Pro tip",
+  "exampleLabel": "EXAMPLE {index}",
+  "@exampleLabel": {
+    "placeholders": { "index": { "type": "int" } }
+  },
+  "practiceNode": "Practice  {title}",
+  "@practiceNode": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+
+  "levelBadge": "Lvl {level}",
+  "@levelBadge": {
+    "placeholders": { "level": { "type": "int" } }
+  },
+  "readTime": "~{minutes} min read",
+  "@readTime": {
+    "placeholders": { "minutes": { "type": "int" } }
+  },
+
+  "errorOfflineTitle": "You're offline",
+  "errorSessionTitle": "Session ended",
+  "errorServerTitle": "Server problem",
+  "errorGenericTitle": "Something went wrong",
+
+  "errMsgOffline": "You're offline. Check your connection and try again.",
+  "errMsgInvalidCredentials": "Wrong email or password.",
+  "errMsgEmailExists": "That email is already registered.",
+  "errMsgValidation": "Please check the highlighted fields.",
+  "errMsgNotFound": "We couldn't find what you were looking for.",
+  "errMsgAiUnavailable": "The AI tutor is taking a break. Try again shortly.",
+  "errMsgServer": "Something went wrong on our end. Please try again.",
+  "errMsgGeneric": "Something went wrong. Please try again.",
+
+  "nodeArithAddition": "Addition",
+  "nodeArithSubtraction": "Subtraction",
+  "nodeArithMultiplication": "Multiplication",
+  "nodeArithDivision": "Division",
+  "nodeFractionsSimplify": "Simplifying Fractions",
+  "nodeFractionsAddSub": "Adding & Subtracting Fractions",
+  "nodeAlgebraLinear": "Linear Equations",
+  "nodeAlgebraFactorize": "Factorization"
+}

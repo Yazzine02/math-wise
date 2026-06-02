@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../theme/app_theme.dart';
 import 'app_widgets.dart';
 
 /// Single error-state widget used by every screen.
 ///
 /// Switches presentation based on the [ApiException] subclass:
-///   • [NetworkException]             → cyan, "You're offline"
+///   • [NetworkException]             → cyan, "offline"
 ///   • [UnauthorizedException]
-///     / [ForbiddenException]         → violet, "Session ended"
+///     / [ForbiddenException]         → violet, "session ended"
 ///   • [ServerException]
-///     / [ServiceUnavailableException]→ pink, "Server problem"
-///   • everything else                → pink, "Something went wrong"
+///     / [ServiceUnavailableException]→ pink, "server problem"
+///   • everything else                → pink, "something went wrong"
 ///
-/// [ValidationException] is intentionally not given its own visual — those
-/// errors should be rendered field-by-field on the form, not as a banner.
-/// If the caller still hands a ValidationException to ErrorView, we fall
-/// back to the generic flavour.
+/// The heading is localized by kind; the body is localized from the error
+/// envelope's `code` via [localizedErrorMessage] (falling back to the
+/// server message). [ValidationException] is intentionally not given its own
+/// visual — those are rendered field-by-field on the form.
 class ErrorView extends StatelessWidget {
   final ApiException error;
   final VoidCallback? onRetry;
@@ -25,6 +27,7 @@ class ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final flavor = _flavor();
     return Container(
       width: double.infinity,
@@ -43,7 +46,7 @@ class ErrorView extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  flavor.title,
+                  _title(l, flavor.kind),
                   style: AppText.title(
                       size: 14, weight: FontWeight.w800, color: flavor.color),
                 ),
@@ -52,13 +55,13 @@ class ErrorView extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            error.message,
+            localizedErrorMessage(l, error),
             style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.45),
           ),
           if (onRetry != null) ...[
             const SizedBox(height: 14),
             MwButton(
-              label: 'Try again',
+              label: l.tryAgain,
               icon: Icons.refresh_rounded,
               onPressed: onRetry,
               style: MwButtonStyle.ghost,
@@ -69,43 +72,42 @@ class ErrorView extends StatelessWidget {
     );
   }
 
+  String _title(AppLocalizations l, _Kind kind) {
+    switch (kind) {
+      case _Kind.offline:
+        return l.errorOfflineTitle;
+      case _Kind.session:
+        return l.errorSessionTitle;
+      case _Kind.server:
+        return l.errorServerTitle;
+      case _Kind.generic:
+        return l.errorGenericTitle;
+    }
+  }
+
   _ErrorFlavor _flavor() {
     if (error is NetworkException) {
       return const _ErrorFlavor(
-        icon: Icons.wifi_off_rounded,
-        title: "You're offline",
-        color: AppColors.cyan,
-      );
+          icon: Icons.wifi_off_rounded, color: AppColors.cyan, kind: _Kind.offline);
     }
     if (error is UnauthorizedException || error is ForbiddenException) {
       return const _ErrorFlavor(
-        icon: Icons.lock_outline_rounded,
-        title: 'Session ended',
-        color: AppColors.violet,
-      );
+          icon: Icons.lock_outline_rounded, color: AppColors.violet, kind: _Kind.session);
     }
     if (error is ServerException || error is ServiceUnavailableException) {
       return const _ErrorFlavor(
-        icon: Icons.cloud_off_rounded,
-        title: 'Server problem',
-        color: AppColors.pink,
-      );
+          icon: Icons.cloud_off_rounded, color: AppColors.pink, kind: _Kind.server);
     }
     return const _ErrorFlavor(
-      icon: Icons.error_outline_rounded,
-      title: 'Something went wrong',
-      color: AppColors.pink,
-    );
+        icon: Icons.error_outline_rounded, color: AppColors.pink, kind: _Kind.generic);
   }
 }
 
+enum _Kind { offline, session, server, generic }
+
 class _ErrorFlavor {
   final IconData icon;
-  final String title;
   final Color color;
-  const _ErrorFlavor({
-    required this.icon,
-    required this.title,
-    required this.color,
-  });
+  final _Kind kind;
+  const _ErrorFlavor({required this.icon, required this.color, required this.kind});
 }

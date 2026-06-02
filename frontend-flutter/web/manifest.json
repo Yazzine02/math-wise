@@ -1,6 +1,6 @@
 {
-    "name": "math_wise_frontend",
-    "short_name": "math_wise_frontend",
+    "name": "MathExp",
+    "short_name": "MathExp",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

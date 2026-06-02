@@ -1,13 +1,17 @@
 // lib/screens/lesson_screen.dart
 //
 // Lesson detail. Sections: intro callout · The concept · Worked examples
-// (monospace JetBrains Mono cards) · Pro tip · Practice CTA.
+// (monospace JetBrains Mono cards) · Pro tip · Practice CTA. The lesson
+// body text (intro/theory/examples/tip) is server-supplied content; the
+// section chrome + node title are localized.
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../models/lesson.dart';
 import '../providers/auth_provider.dart';
 import '../services/course_service.dart';
@@ -76,6 +80,8 @@ class _LessonBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+    final nodeTitle = localizedNodeTitle(l, lesson.nodeCode, lesson.nodeTitle);
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
       children: [
@@ -85,7 +91,7 @@ class _LessonBody extends StatelessWidget {
             MwIconButton(icon: Icons.arrow_back_rounded, onPressed: () => context.pop()),
             const SizedBox(width: 10),
             Text(
-              'LESSON',
+              l.lessonKicker,
               style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
             ),
           ],
@@ -94,7 +100,7 @@ class _LessonBody extends StatelessWidget {
 
         // ─── Title + meta ───────────────────────────────────────────
         Text(
-          lesson.nodeTitle,
+          nodeTitle,
           style: AppText.display(size: 26, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
         ),
         const SizedBox(height: 10),
@@ -124,13 +130,13 @@ class _LessonBody extends StatelessWidget {
 
         // ─── The concept ────────────────────────────────────────────
         const SizedBox(height: 22),
-        const _SectionHeader(icon: Icons.menu_book_rounded, title: 'The concept', tint: AppColors.lime),
+        _SectionHeader(icon: Icons.menu_book_rounded, title: l.lessonConcept, tint: AppColors.lime),
         const SizedBox(height: 8),
         Text(lesson.theory, style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.6)),
 
         // ─── Worked examples ────────────────────────────────────────
         const SizedBox(height: 22),
-        const _SectionHeader(icon: Icons.auto_awesome_outlined, title: 'Worked examples', tint: AppColors.lime),
+        _SectionHeader(icon: Icons.auto_awesome_outlined, title: l.lessonExamples, tint: AppColors.lime),
         const SizedBox(height: 10),
         ...List.generate(lesson.examples.length, (i) => Padding(
               padding: const EdgeInsets.only(bottom: 10),
@@ -139,7 +145,7 @@ class _LessonBody extends StatelessWidget {
 
         // ─── Pro tip ────────────────────────────────────────────────
         const SizedBox(height: 12),
-        const _SectionHeader(icon: Icons.bolt_rounded, title: 'Pro tip', tint: AppColors.pink),
+        _SectionHeader(icon: Icons.bolt_rounded, title: l.lessonProTip, tint: AppColors.pink),
         const SizedBox(height: 8),
         Container(
           padding: const EdgeInsets.all(14),
@@ -154,7 +160,7 @@ class _LessonBody extends StatelessWidget {
         // ─── Practice CTA ───────────────────────────────────────────
         const SizedBox(height: 24),
         MwButton(
-          label: 'Practice  ${lesson.nodeTitle}',
+          label: l.practiceNode(nodeTitle),
           icon: Icons.play_arrow_rounded,
           onPressed: () => context.pushNamed('exercise', queryParameters: {'nodeCode': lesson.nodeCode}),
         ),
@@ -188,6 +194,7 @@ class _ExampleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -205,7 +212,7 @@ class _ExampleCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
-              'EXAMPLE $index',
+              l.exampleLabel(index),
               style: AppText.title(size: 10, weight: FontWeight.w800, color: AppColors.bgDeep)
                   .copyWith(letterSpacing: 1),
             ),

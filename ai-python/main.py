@@ -23,7 +23,7 @@ from rag.retriever import retrieve_excerpts
 #Loading environment variables using python-dotenv
 load_dotenv()
 
-app = FastAPI(title="Math Wise AI Service")
+app = FastAPI(title="MathExp AI Service")
 
 #----DATA MODELS----
 class MathEvaluationRequest(BaseModel):

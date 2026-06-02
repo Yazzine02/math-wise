@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../models/exercise.dart';
 import '../models/ai_feedback.dart';
 import '../providers/auth_provider.dart';
@@ -105,7 +107,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   }
 
   Widget _body() {
+    final l = AppLocalizations.of(context)!;
     final ex = _exercise!;
+    final nodeTitle = localizedNodeTitle(l, ex.nodeCode, ex.nodeTitle);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
       child: Column(
@@ -114,11 +118,11 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           // Top bar
           Row(
             children: [
-              MwIconButton(icon: Icons.home_rounded, tooltip: 'Home', onPressed: () => context.go('/home')),
+              MwIconButton(icon: Icons.home_rounded, tooltip: l.navHome, onPressed: () => context.go('/home')),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  ex.nodeTitle.toUpperCase(),
+                  nodeTitle.toUpperCase(),
                   maxLines: 1, overflow: TextOverflow.ellipsis,
                   style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
                 ),
@@ -133,7 +137,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
             children: [
               MwDifficultyBadge(level: ex.difficultyLevel),
               const SizedBox(width: 8),
-              Text(ex.nodeTitle, style: AppText.body(size: 12, color: AppColors.muted)),
+              Text(nodeTitle, style: AppText.body(size: 12, color: AppColors.muted)),
             ],
           ),
           const SizedBox(height: 20),
@@ -150,7 +154,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('SOLVE',
+                Text(l.solve,
                     style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2)),
                 const SizedBox(height: 8),
                 ShaderMask(
@@ -171,9 +175,9 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
 
           // Answer field
           MwField(
-            label: 'Your answer',
+            label: l.yourAnswer,
             controller: _answerController,
-            hint: 'Type your answer…',
+            hint: l.answerHint,
             keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
             textInputAction: TextInputAction.done,
             onSubmitted: (_) => _submit(),
@@ -182,7 +186,7 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
           const Spacer(),
 
           MwButton(
-            label: _submitting ? 'Checking…' : 'Submit answer ✓',
+            label: _submitting ? l.submitting : l.submitAnswer,
             onPressed: _submitting ? null : _submit,
             loading: _submitting,
           ),
@@ -191,4 +195,3 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
     );
   }
 }
-

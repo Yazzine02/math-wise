@@ -10,6 +10,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_signal.dart';
 import '../models/weakness_summary.dart';
@@ -17,6 +19,7 @@ import '../services/progress_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/error_view.dart';
+import '../widgets/language_toggle.dart';
 import '../widgets/mw_wordmark.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -71,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final displayName = context.watch<AuthProvider>().displayName;
     return MwScaffold(
       child: RefreshIndicator(
@@ -86,11 +90,13 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 const MwWordmark(size: 16),
                 const Spacer(),
+                const LanguageToggle(),
+                const SizedBox(width: 10),
                 // XP_PLACEHOLDER — replace with a streak/XP chip once
                 // the backend exposes them. For now a plain logout button.
                 MwIconButton(
                   icon: Icons.logout_rounded,
-                  tooltip: 'Logout',
+                  tooltip: l.logout,
                   onPressed: () => context.read<AuthProvider>().logout(),
                 ),
               ],
@@ -99,12 +105,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // ─── Greeting ─────────────────────────────────────────────
             Text(
-              displayName.isEmpty ? 'Hello!' : 'Hi, $displayName!',
+              displayName.isEmpty ? l.greetingNoName : l.greeting(displayName),
               style: AppText.display(size: 26, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
             ),
             const SizedBox(height: 4),
             Text(
-              'Ready to practice some math?',
+              l.homeSubtitle,
               style: AppText.body(size: 14, color: AppColors.muted),
             ),
 
@@ -124,10 +130,10 @@ class _HomeScreenState extends State<HomeScreen> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('Your weak areas',
+                Text(l.weakAreasTitle,
                     style: AppText.title(size: 15, weight: FontWeight.w800, color: AppColors.ink)),
                 const Spacer(),
-                Text('AI-DIAGNOSED',
+                Text(l.aiDiagnosed,
                     style: AppText.label(size: 10, weight: FontWeight.w700, color: AppColors.lime, letterSpacing: 1.2)),
               ],
             ),
@@ -160,6 +166,7 @@ class _PracticeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadii.xl),
@@ -194,12 +201,12 @@ class _PracticeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'ADAPTIVE PRACTICE · TUNED TO YOU',
+                    l.practiceKicker,
                     style: AppText.label(size: 11, weight: FontWeight.w700, color: AppColors.bgDeep.withValues(alpha: 0.7), letterSpacing: 1.5),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Start practice',
+                    l.startPractice,
                     style: AppText.display(size: 22, weight: FontWeight.w800, color: AppColors.bgDeep, letterSpacing: -0.5),
                   ),
                   const SizedBox(height: 12),
@@ -214,7 +221,7 @@ class _PracticeCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.play_arrow_rounded, size: 16, color: AppColors.lime),
                         const SizedBox(width: 4),
-                        Text('Begin', style: AppText.title(size: 13, weight: FontWeight.w800, color: AppColors.lime)),
+                        Text(l.begin, style: AppText.title(size: 13, weight: FontWeight.w800, color: AppColors.lime)),
                       ],
                     ),
                   ),
@@ -234,6 +241,7 @@ class _BrowseCoursesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -263,10 +271,10 @@ class _BrowseCoursesCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Browse courses',
+                    Text(l.browseCourses,
                         style: AppText.title(size: 14, weight: FontWeight.w700, color: AppColors.ink)),
                     const SizedBox(height: 2),
-                    Text('8 concepts · learn before you practice',
+                    Text(l.browseCoursesSubtitle,
                         style: AppText.body(size: 11, color: AppColors.muted)),
                   ],
                 ),
@@ -290,6 +298,7 @@ class _WeaknessTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final tone = _tones[index % _tones.length];
     final glyph = _glyphs[index % _glyphs.length];
     return Material(
@@ -322,11 +331,11 @@ class _WeaknessTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(entry.nodeTitle,
+                    Text(localizedNodeTitle(l, entry.nodeCode, entry.nodeTitle),
                         style: AppText.title(size: 14, weight: FontWeight.w700, color: AppColors.ink),
                         maxLines: 2, overflow: TextOverflow.ellipsis),
                     const SizedBox(height: 2),
-                    Text('${entry.failureCount} mistake${entry.failureCount == 1 ? '' : 's'}',
+                    Text(l.mistakeCount(entry.failureCount),
                         style: AppText.body(size: 11, color: AppColors.muted)),
                   ],
                 ),
@@ -345,6 +354,7 @@ class _EmptyWeaknessBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -358,7 +368,7 @@ class _EmptyWeaknessBlock extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'No weaknesses detected yet. Start practising — the AI will diagnose what to focus on.',
+              l.noWeaknesses,
               style: AppText.body(size: 13, color: AppColors.inkSoft, height: 1.45),
             ),
           ),
@@ -367,4 +377,3 @@ class _EmptyWeaknessBlock extends StatelessWidget {
     );
   }
 }
-

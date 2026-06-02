@@ -8,10 +8,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/error_view.dart';
+import '../widgets/language_toggle.dart';
 import '../widgets/mw_wordmark.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -60,6 +62,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     // Backend's RegisterRequestDto field name is `displayName`. That's what
     // arrives in fieldErrors when validation fails. We key the MwField lookup
     // off the same name.
@@ -79,28 +83,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 const MwWordmark(size: 16),
                 const Spacer(),
-                Text('1 of 1', style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.muted)),
+                const LanguageToggle(),
+                const SizedBox(width: 10),
+                Text(l.registerStep, style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.muted)),
               ],
             ),
             const SizedBox(height: 24),
 
             Text(
-              'CREATE YOUR PROFILE',
+              l.registerKicker,
               style: AppText.label(weight: FontWeight.w700, color: AppColors.lime, letterSpacing: 1.5),
             ),
             const SizedBox(height: 6),
             Text(
-              'What should we',
+              l.registerTitleLine1,
               style: AppText.display(size: 28, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.8),
             ),
             Text(
-              'call you?',
+              l.registerTitleLine2,
               style: AppText.display(size: 28, weight: FontWeight.w800, color: AppColors.lime, letterSpacing: -0.8),
             ),
 
             const SizedBox(height: 22),
             MwField(
-              label: 'Display name',
+              label: l.fieldDisplayName,
               controller: _displayNameController,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
@@ -108,7 +114,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 14),
             MwField(
-              label: 'Email',
+              label: l.fieldEmail,
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
@@ -116,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 14),
             MwField(
-              label: 'Password',
+              label: l.fieldPassword,
               controller: _passwordController,
               obscure: true,
               textInputAction: TextInputAction.done,
@@ -130,16 +136,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
 
             const SizedBox(height: 28),
-            MwButton(label: 'Continue  →', onPressed: _register, loading: _loading),
+            MwButton(label: l.registerCta, onPressed: _register, loading: _loading),
 
             const SizedBox(height: 18),
             Center(
               child: Wrap(
                 children: [
-                  Text('Already have an account? ', style: AppText.body(size: 13, color: AppColors.muted)),
+                  Text(l.registerHaveAccount, style: AppText.body(size: 13, color: AppColors.muted)),
                   GestureDetector(
                     onTap: () => context.go('/login'),
-                    child: Text('Sign in', style: AppText.body(size: 13, weight: FontWeight.w700, color: AppColors.lime)),
+                    child: Text(l.registerSignIn, style: AppText.body(size: 13, weight: FontWeight.w700, color: AppColors.lime)),
                   ),
                 ],
               ),

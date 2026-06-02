@@ -1,6 +1,6 @@
 // lib/widgets/mw_wordmark.dart
 //
-// "Math Wise" wordmark — lime ∑ sigil + Sora display text. Used in headers.
+// "MathExp" wordmark — lime ∑ sigil + Sora display text. Used in headers.
 
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
@@ -28,7 +28,7 @@ class MwWordmark extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          'Math Wise',
+          'MathExp',
           style: AppText.display(size: size, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.6),
         ),
       ],

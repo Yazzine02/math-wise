@@ -1,6 +1,6 @@
 // lib/theme/app_theme.dart
 //
-// Math Wise — design tokens + ThemeData for the "Bold Playful (dark)"
+// MathExp — design tokens + ThemeData for the "Bold Playful (dark)"
 // direction. Centralises every colour, font and radius so screens stay
 // consistent. To re-skin the app, edit values in [AppColors] / [AppRadii]
 // — no screen file should reference Material defaults directly.

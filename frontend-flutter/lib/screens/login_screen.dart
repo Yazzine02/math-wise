@@ -10,10 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_widgets.dart';
 import '../widgets/error_view.dart';
+import '../widgets/language_toggle.dart';
 import '../widgets/mw_wordmark.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -63,6 +65,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     // Pluck field-level errors out of a ValidationException, if any. For all
     // other ApiException types fieldErrors is null and these stay empty.
     final fieldErrors = (_error is ValidationException)
@@ -81,12 +85,18 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const MwWordmark(size: 18),
+              Row(
+                children: [
+                  const MwWordmark(size: 18),
+                  const Spacer(),
+                  const LanguageToggle(),
+                ],
+              ),
               const SizedBox(height: 36),
 
               // Headline
               Text(
-                'Sign in &\nlevel up',
+                l.loginTitleLine1,
                 style: AppText.display(size: 32, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -1),
               ),
               ShaderMask(
@@ -94,7 +104,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   colors: [AppColors.lime, AppColors.cyan],
                 ).createShader(rect),
                 child: Text(
-                  'your math.',
+                  l.loginTitleLine2,
                   style: AppText.display(size: 32, weight: FontWeight.w800, color: Colors.white, letterSpacing: -1),
                 ),
               ),
@@ -102,16 +112,16 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 28),
 
               MwField(
-                label: 'Email',
+                label: l.fieldEmail,
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,
-                hint: 'you@school.edu',
+                hint: l.loginEmailHint,
                 errorText: fieldErrors?['email'],
               ),
               const SizedBox(height: 14),
               MwField(
-                label: 'Password',
+                label: l.fieldPassword,
                 controller: _passwordController,
                 obscure: true,
                 textInputAction: TextInputAction.done,
@@ -126,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 28),
               MwButton(
-                label: _loading ? 'Signing in…' : "Let's go  →",
+                label: _loading ? l.loginLoading : l.loginCta,
                 onPressed: _login,
                 loading: _loading,
               ),
@@ -135,11 +145,11 @@ class _LoginScreenState extends State<LoginScreen> {
               Center(
                 child: Wrap(
                   children: [
-                    Text('New player? ', style: AppText.body(size: 13, color: AppColors.muted)),
+                    Text(l.loginNoAccount, style: AppText.body(size: 13, color: AppColors.muted)),
                     GestureDetector(
                       onTap: () => context.go('/register'),
                       child: Text(
-                        'Create account',
+                        l.loginCreateAccount,
                         style: AppText.body(size: 13, weight: FontWeight.w700, color: AppColors.lime),
                       ),
                     ),

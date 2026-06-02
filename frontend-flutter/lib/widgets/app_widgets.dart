@@ -14,6 +14,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../l10n/app_localizations.dart';
 import '../theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -323,7 +324,7 @@ class MwDifficultyBadge extends StatelessWidget {
         border: Border.all(color: color, width: 1.5),
       ),
       child: Text(
-        'Lvl $level',
+        AppLocalizations.of(context)!.levelBadge(level),
         style: AppText.title(size: 11, weight: FontWeight.w800, color: color),
       ),
     );
@@ -342,7 +343,7 @@ class MwReadTime extends StatelessWidget {
       children: [
         const Icon(Icons.schedule, size: 12, color: AppColors.muted),
         const SizedBox(width: 4),
-        Text('~$minutes min read', style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.muted)),
+        Text(AppLocalizations.of(context)!.readTime(minutes), style: AppText.body(size: 11, weight: FontWeight.w600, color: AppColors.muted)),
       ],
     );
   }

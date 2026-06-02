@@ -9,6 +9,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../errors/api_exception.dart';
+import '../l10n/app_localizations.dart';
+import '../l10n/l10n_helpers.dart';
 import '../models/course.dart';
 import '../providers/auth_provider.dart';
 import '../services/course_service.dart';
@@ -39,6 +41,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return MwScaffold(
       child: RefreshIndicator(
         color: AppColors.lime,
@@ -56,7 +59,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   children: [
                     MwIconButton(icon: Icons.arrow_back_rounded, onPressed: () => context.pop()),
                     const SizedBox(width: 10),
-                    Text('Courses',
+                    Text(l.coursesTitle,
                         style: AppText.display(size: 22, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.6)),
                     const Spacer(),
                     if (snap.hasData)
@@ -68,7 +71,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                           borderRadius: BorderRadius.circular(AppRadii.pill),
                         ),
                         child: Text(
-                          '${snap.data!.length} TOPICS',
+                          l.topicsCount(snap.data!.length),
                           style: AppText.label(size: 10, weight: FontWeight.w700, color: AppColors.muted, letterSpacing: 1.2),
                         ),
                       ),
@@ -76,7 +79,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Bite-sized lessons explaining each concept before you practice it.',
+                  l.coursesSubtitle,
                   style: AppText.body(size: 12, color: AppColors.muted),
                 ),
                 const SizedBox(height: 18),
@@ -109,7 +112,7 @@ class _CoursesScreenState extends State<CoursesScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 40),
                     child: Center(
-                      child: Text('No courses available yet.',
+                      child: Text(l.coursesEmpty,
                           style: AppText.body(size: 14, color: AppColors.muted)),
                     ),
                   )
@@ -133,6 +136,7 @@ class _CourseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadii.lg),
@@ -153,7 +157,7 @@ class _CourseCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      course.nodeTitle,
+                      localizedNodeTitle(l, course.nodeCode, course.nodeTitle),
                       style: AppText.display(size: 17, weight: FontWeight.w800, color: AppColors.ink, letterSpacing: -0.4),
                     ),
                   ),
@@ -175,7 +179,7 @@ class _CourseCard extends StatelessWidget {
                 children: [
                   MwReadTime(minutes: course.estimatedMinutes),
                   const Spacer(),
-                  Text('Start lesson',
+                  Text(l.startLesson,
                       style: AppText.title(size: 12, weight: FontWeight.w800, color: AppColors.lime)),
                   const SizedBox(width: 4),
                   const Icon(Icons.arrow_forward, size: 14, color: AppColors.lime),
@@ -188,4 +192,3 @@ class _CourseCard extends StatelessWidget {
     );
   }
 }
-
