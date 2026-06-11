@@ -51,6 +51,7 @@
         <module>auth-service</module>
         <module>content-service</module>
         <module>practice-service</module>
+        <module>gateway</module>
     </modules>
 
     <dependencyManagement>
