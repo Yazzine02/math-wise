@@ -1,4 +1,4 @@
-package com.mathwise.backend.controller;
+package com.mathwise.auth.controller;
 
 import com.mathwise.common.dto.AuthResponseDto;
 import com.mathwise.common.dto.LoginRequestDto;

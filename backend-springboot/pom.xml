@@ -48,6 +48,7 @@
 
     <modules>
         <module>common</module>
+        <module>auth-service</module>
         <module>math-wise-backend</module>
     </modules>
 

@@ -1,7 +1,7 @@
-package com.mathwise.backend.controller;
+package com.mathwise.auth.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mathwise.backend.TestcontainersConfiguration;
+import com.mathwise.auth.TestcontainersConfiguration;
 import com.mathwise.common.dto.LoginRequestDto;
 import com.mathwise.common.dto.RegisterRequestDto;
 import com.mathwise.common.repository.StudentRepository;
