@@ -1,7 +1,7 @@
 package com.mathwise.backend.service;
 
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

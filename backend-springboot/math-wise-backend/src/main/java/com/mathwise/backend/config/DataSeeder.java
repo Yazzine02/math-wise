@@ -1,11 +1,11 @@
 package com.mathwise.backend.config;
 
-import com.mathwise.backend.entity.Exercise;
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.entity.Lesson;
-import com.mathwise.backend.repository.ExerciseRepository;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
-import com.mathwise.backend.repository.LessonRepository;
+import com.mathwise.common.entity.Exercise;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.entity.Lesson;
+import com.mathwise.common.repository.ExerciseRepository;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
+import com.mathwise.common.repository.LessonRepository;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;

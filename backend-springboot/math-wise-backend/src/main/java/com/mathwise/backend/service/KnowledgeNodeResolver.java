@@ -1,7 +1,7 @@
 package com.mathwise.backend.service;
 
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;

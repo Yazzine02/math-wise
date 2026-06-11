@@ -1,14 +1,14 @@
 package com.mathwise.backend.service;
 
-import com.mathwise.backend.dto.ExerciseDto;
-import com.mathwise.backend.dto.WeaknessSummaryDto;
-import com.mathwise.backend.entity.Exercise;
-import com.mathwise.backend.entity.InteractionLog;
-import com.mathwise.backend.entity.KnowledgeNode;
+import com.mathwise.common.dto.ExerciseDto;
+import com.mathwise.common.dto.WeaknessSummaryDto;
+import com.mathwise.common.entity.Exercise;
+import com.mathwise.common.entity.InteractionLog;
+import com.mathwise.common.entity.KnowledgeNode;
 import com.mathwise.backend.event.ExercisePoolLowEvent;
-import com.mathwise.backend.repository.ExerciseRepository;
-import com.mathwise.backend.repository.InteractionLogRepository;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import com.mathwise.common.repository.ExerciseRepository;
+import com.mathwise.common.repository.InteractionLogRepository;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;

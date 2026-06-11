@@ -1,12 +1,12 @@
 package com.mathwise.backend.service;
 
-import com.mathwise.backend.dto.GenerateExercisesRequestDto;
-import com.mathwise.backend.dto.GenerateExercisesResponseDto;
-import com.mathwise.backend.dto.GeneratedExerciseDto;
-import com.mathwise.backend.entity.Exercise;
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.repository.ExerciseRepository;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import com.mathwise.common.dto.GenerateExercisesRequestDto;
+import com.mathwise.common.dto.GenerateExercisesResponseDto;
+import com.mathwise.common.dto.GeneratedExerciseDto;
+import com.mathwise.common.entity.Exercise;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.repository.ExerciseRepository;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -1,8 +1,8 @@
 package com.mathwise.backend.controller;
 
-import com.mathwise.backend.dto.ExerciseDto;
-import com.mathwise.backend.dto.WeaknessSummaryDto;
-import com.mathwise.backend.entity.Student;
+import com.mathwise.common.dto.ExerciseDto;
+import com.mathwise.common.dto.WeaknessSummaryDto;
+import com.mathwise.common.entity.Student;
 import com.mathwise.backend.service.StudentProgressService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

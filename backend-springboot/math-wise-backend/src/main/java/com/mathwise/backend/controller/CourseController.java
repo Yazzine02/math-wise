@@ -1,10 +1,10 @@
 package com.mathwise.backend.controller;
 
-import com.mathwise.backend.dto.CourseSummaryDto;
-import com.mathwise.backend.dto.LessonDto;
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.entity.Lesson;
-import com.mathwise.backend.repository.LessonRepository;
+import com.mathwise.common.dto.CourseSummaryDto;
+import com.mathwise.common.dto.LessonDto;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.entity.Lesson;
+import com.mathwise.common.repository.LessonRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;

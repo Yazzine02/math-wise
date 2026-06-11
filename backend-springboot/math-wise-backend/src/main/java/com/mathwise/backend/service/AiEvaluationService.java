@@ -1,15 +1,15 @@
 package com.mathwise.backend.service;
 
-import com.mathwise.backend.dto.AiFeedbackDto;
-import com.mathwise.backend.dto.AnswerCheckRequestDto;
-import com.mathwise.backend.dto.AnswerCheckResponseDto;
-import com.mathwise.backend.dto.EvaluateAnswerRequestDto;
-import com.mathwise.backend.dto.MathEvaluationRequestDto;
-import com.mathwise.backend.entity.InteractionLog;
-import com.mathwise.backend.entity.KnowledgeNode;
-import com.mathwise.backend.entity.Student;
-import com.mathwise.backend.repository.InteractionLogRepository;
-import com.mathwise.backend.repository.KnowledgeNodeRepository;
+import com.mathwise.common.dto.AiFeedbackDto;
+import com.mathwise.common.dto.AnswerCheckRequestDto;
+import com.mathwise.common.dto.AnswerCheckResponseDto;
+import com.mathwise.common.dto.EvaluateAnswerRequestDto;
+import com.mathwise.common.dto.MathEvaluationRequestDto;
+import com.mathwise.common.entity.InteractionLog;
+import com.mathwise.common.entity.KnowledgeNode;
+import com.mathwise.common.entity.Student;
+import com.mathwise.common.repository.InteractionLogRepository;
+import com.mathwise.common.repository.KnowledgeNodeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

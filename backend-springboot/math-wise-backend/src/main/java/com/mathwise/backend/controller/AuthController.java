@@ -1,13 +1,13 @@
 package com.mathwise.backend.controller;
 
-import com.mathwise.backend.dto.AuthResponseDto;
-import com.mathwise.backend.dto.LoginRequestDto;
-import com.mathwise.backend.dto.RegisterRequestDto;
-import com.mathwise.backend.entity.Student;
-import com.mathwise.backend.exception.EmailAlreadyExistsException;
-import com.mathwise.backend.exception.InvalidCredentialsException;
-import com.mathwise.backend.repository.StudentRepository;
-import com.mathwise.backend.security.JwtUtil;
+import com.mathwise.common.dto.AuthResponseDto;
+import com.mathwise.common.dto.LoginRequestDto;
+import com.mathwise.common.dto.RegisterRequestDto;
+import com.mathwise.common.entity.Student;
+import com.mathwise.common.exception.EmailAlreadyExistsException;
+import com.mathwise.common.exception.InvalidCredentialsException;
+import com.mathwise.common.repository.StudentRepository;
+import com.mathwise.common.security.JwtUtil;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -37,7 +37,7 @@ public class AuthController {
      * <ul>
      *   <li>{@code @Valid} triggers Bean Validation on the request body. Invalid
      *       input becomes a {@code MethodArgumentNotValidException} → 400 with
-     *       field-level errors via {@link com.mathwise.backend.exception.GlobalExceptionHandler}.</li>
+     *       field-level errors via {@link com.mathwise.common.exception.GlobalExceptionHandler}.</li>
      *   <li>Email collision throws {@link EmailAlreadyExistsException} → 409
      *       + code {@code EMAIL_ALREADY_EXISTS}. The previous implementation
      *       returned a raw {@code String} body which broke the uniform error

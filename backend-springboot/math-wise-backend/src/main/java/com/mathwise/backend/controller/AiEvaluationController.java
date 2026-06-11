@@ -1,7 +1,7 @@
 package com.mathwise.backend.controller;
 
-import com.mathwise.backend.dto.AiFeedbackDto;
-import com.mathwise.backend.dto.EvaluateAnswerRequestDto;
+import com.mathwise.common.dto.AiFeedbackDto;
+import com.mathwise.common.dto.EvaluateAnswerRequestDto;
 import com.mathwise.backend.service.AiEvaluationService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;

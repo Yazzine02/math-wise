@@ -2,9 +2,9 @@ package com.mathwise.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mathwise.backend.TestcontainersConfiguration;
-import com.mathwise.backend.dto.LoginRequestDto;
-import com.mathwise.backend.dto.RegisterRequestDto;
-import com.mathwise.backend.repository.StudentRepository;
+import com.mathwise.common.dto.LoginRequestDto;
+import com.mathwise.common.dto.RegisterRequestDto;
+import com.mathwise.common.repository.StudentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

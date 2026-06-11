@@ -1,5 +1,6 @@
 package com.mathwise.backend.security;
 
+import com.mathwise.common.security.JwtAuthFilter;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
