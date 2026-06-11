@@ -1,4 +1,4 @@
-package com.mathwise.backend.config;
+package com.mathwise.content.config;
 
 import com.mathwise.common.entity.Exercise;
 import com.mathwise.common.entity.KnowledgeNode;

@@ -1,4 +1,4 @@
-package com.mathwise.backend.controller;
+package com.mathwise.content.controller;
 
 import com.mathwise.common.dto.CourseSummaryDto;
 import com.mathwise.common.dto.LessonDto;
