@@ -1,0 +1,4 @@
+# Keep image build contexts lean: host build outputs are rebuilt inside the
+# image anyway, and stale jars must never leak into the runtime stage.
+**/target/
+.mvn/wrapper/*.jar
