@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Phase 12 — Maven reactor parent for the MathWise backend microservices.
+
+  This pom plays two roles at once (they're independent Maven concepts):
+    1. AGGREGATOR — the <modules> list tells `./mvnw verify` here to build
+       every service in dependency order.
+    2. PARENT — service modules inherit from this pom, which itself inherits
+       from spring-boot-starter-parent, so every module gets the same Boot
+       version, Java level, and pinned third-party versions from one place.
+
+  Versions are pinned ONCE here (jjwt, testcontainers BOM) so module poms
+  stay version-less. The Spring Cloud BOM is deliberately NOT imported here —
+  only the gateway needs it, and isolating it there means a Spring Cloud
+  resolution problem can never break the other services' builds.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.3</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.mathwise</groupId>
+    <artifactId>mathwise-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>mathwise-parent</name>
+    <description>MathWise backend — microservices reactor</description>
+
+    <properties>
+        <java.version>21</java.version>
+        <jjwt.version>0.12.5</jjwt.version>
+        <!--
+          Bump Testcontainers above what Spring Boot 4.0.3 pins (1.20.4).
+          Older bundled docker-java clients issue /v1.32/* API requests;
+          modern Docker Desktop engines enforce MinAPIVersion 1.40 and
+          answer old clients with a stub 400 ("Could not find a valid
+          Docker environment"). Verified locally: daemon ApiVersion 1.54 /
+          MinAPIVersion 1.40; /v1.32/info → stub, /v1.44/info → 200.
+        -->
+        <testcontainers.version>2.0.5</testcontainers.version>
+    </properties>
+
+    <modules>
+        <module>math-wise-backend</module>
+    </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot's parent manages spring-boot-testcontainers but NOT
+                 the individual org.testcontainers:* modules — import their BOM. -->
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!--
+                  Failsafe — *IT.java runs during `verify` (Surefire keeps *Test.java
+                  during `test`). Managed here so each service module just declares
+                  the plugin and inherits the execution wiring.
+                -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+</project>

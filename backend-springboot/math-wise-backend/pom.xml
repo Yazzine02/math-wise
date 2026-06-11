@@ -3,14 +3,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.3</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <groupId>com.mathwise</groupId>
+        <artifactId>mathwise-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-    <groupId>com.mathwise</groupId>
     <artifactId>backend</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <name>math-wise-backend</name>
     <description>math-wise-backend</description>
     <url/>
@@ -26,36 +24,7 @@
         <tag/>
         <url/>
     </scm>
-    <properties>
-        <java.version>21</java.version>
-        <!--
-          Bump Testcontainers above what Spring Boot 4.0.3 pins (1.20.4
-          ships docker-java 3.4.0 with default API 1.32; modern Docker
-          Desktop daemons require API >= 1.40 and reject older clients).
-          1.21.x bundles docker-java that negotiates a modern API.
-        -->
-        <testcontainers.version>1.21.3</testcontainers.version>
-    </properties>
-
-    <!--
-        Spring Boot 4's parent BOM manages spring-boot-testcontainers, but
-        NOT the individual org.testcontainers:* modules (postgresql,
-        junit-jupiter, etc.) — they live under the testcontainers BOM,
-        which we import here so the version-less dependency declarations
-        below resolve.
-    -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>${testcontainers.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
+    <!-- Versions (java, testcontainers BOM, jjwt) inherited from mathwise-parent. -->
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -127,14 +96,15 @@
             <artifactId>spring-boot-testcontainers</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Testcontainers 2.x renamed module artifacts to testcontainers-<module>. -->
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>postgresql</artifactId>
+            <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

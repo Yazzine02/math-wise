@@ -39,7 +39,8 @@ public class TestcontainersConfiguration {
 
     @Bean
     @ServiceConnection
-    PostgreSQLContainer<?> postgresContainer() {
-        return new PostgreSQLContainer<>("postgres:16");
+    PostgreSQLContainer postgresContainer() {
+        // Testcontainers 2.x dropped the SELF generic on container classes.
+        return new PostgreSQLContainer("postgres:16");
     }
 }
