@@ -50,7 +50,7 @@
         <module>common</module>
         <module>auth-service</module>
         <module>content-service</module>
-        <module>math-wise-backend</module>
+        <module>practice-service</module>
     </modules>
 
     <dependencyManagement>
