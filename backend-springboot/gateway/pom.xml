@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  gateway — the single public entry point (:9090).
+
+  Phase 12's "don't break anything" mechanism: the Flutter app keeps calling
+  localhost:9090 with the exact same routes it used against the monolith;
+  this gateway forwards each path family to the owning service. It is a
+  DUMB ROUTER on purpose — no JPA, no security chain: JWTs pass through
+  untouched and every service validates them itself (stateless, shared
+  secret), so the gateway adds no auth state and no coupling.
+
+  The Spring Cloud dependency is pinned HERE (not in the parent) so a
+  Spring Cloud resolution problem can never break the other services.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.mathwise</groupId>
+        <artifactId>mathwise-parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>gateway</artifactId>
+    <name>mathwise-gateway</name>
+
+    <dependencies>
+        <!-- Servlet-stack Spring Cloud Gateway (fits our WebMVC services;
+             5.0.x is the Boot 4 / Spring Cloud 2025.1 line). -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway-server-webmvc</artifactId>
+            <version>5.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

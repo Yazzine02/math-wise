@@ -1,0 +1,25 @@
+package com.mathwise.practice.controller;
+
+import com.mathwise.common.dto.AiFeedbackDto;
+import com.mathwise.common.dto.EvaluateAnswerRequestDto;
+import com.mathwise.practice.service.AiEvaluationService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/exercises")
+public class AiEvaluationController {
+
+    private final AiEvaluationService aiEvaluationService;
+
+    public AiEvaluationController(AiEvaluationService aiEvaluationService) {
+        this.aiEvaluationService = aiEvaluationService;
+    }
+
+    @PostMapping("/evaluate")
+    public ResponseEntity<AiFeedbackDto> evaluateError(@Valid @RequestBody EvaluateAnswerRequestDto requestDto) {
+        AiFeedbackDto feedback = aiEvaluationService.evaluateStudentAnswer(requestDto);
+        return ResponseEntity.ok(feedback);
+    }
+}

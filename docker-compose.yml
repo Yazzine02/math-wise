@@ -52,6 +52,79 @@ services:
       - ollama
     restart: unless-stopped
 
+  # ── Phase 12: the Java microservices ────────────────────────────────────
+  # All four build from the reactor root (backend-springboot/) so the shared
+  # `common` module is visible. Only the gateway publishes a host port —
+  # the services are internal, reachable by compose DNS name.
+
+  auth-service:
+    build:
+      context: ./backend-springboot
+      dockerfile: auth-service/Dockerfile
+    container_name: mathwise-auth
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mathwise_db}
+      DB_USER: ${DB_USER:-db_user}
+      DB_PASSWORD: ${DB_PASSWORD:-0}
+      JWT_SECRET: ${JWT_SECRET:-DEV_ONLY_PLACEHOLDER_REPLACE_VIA_JWT_SECRET_ENV_VAR}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  content-service:
+    build:
+      context: ./backend-springboot
+      dockerfile: content-service/Dockerfile
+    container_name: mathwise-content
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mathwise_db}
+      DB_USER: ${DB_USER:-db_user}
+      DB_PASSWORD: ${DB_PASSWORD:-0}
+      JWT_SECRET: ${JWT_SECRET:-DEV_ONLY_PLACEHOLDER_REPLACE_VIA_JWT_SECRET_ENV_VAR}
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  practice-service:
+    build:
+      context: ./backend-springboot
+      dockerfile: practice-service/Dockerfile
+    container_name: mathwise-practice
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mathwise_db}
+      DB_USER: ${DB_USER:-db_user}
+      DB_PASSWORD: ${DB_PASSWORD:-0}
+      JWT_SECRET: ${JWT_SECRET:-DEV_ONLY_PLACEHOLDER_REPLACE_VIA_JWT_SECRET_ENV_VAR}
+      AI_SERVICE_URL: http://ai-service:8000
+    depends_on:
+      - postgres
+      - ai-service
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ./backend-springboot
+      dockerfile: gateway/Dockerfile
+    container_name: mathwise-gateway
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:9091
+      CONTENT_SERVICE_URL: http://content-service:9092
+      PRACTICE_SERVICE_URL: http://practice-service:9093
+    ports:
+      # The monolith's old port — the Flutter app keeps hitting 10.0.2.2:9090.
+      - "9090:9090"
+    depends_on:
+      - auth-service
+      - content-service
+      - practice-service
+    restart: unless-stopped
+
 volumes:
   mathwise-pg-data:
   mathwise-ollama-data:

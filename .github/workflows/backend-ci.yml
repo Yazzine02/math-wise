@@ -70,8 +70,9 @@ jobs:
 
     defaults:
       run:
-        # Avoids `working-directory:` on every step.
-        working-directory: backend-springboot/math-wise-backend
+        # Phase 12: the monolith became a multi-module reactor — build from
+        # the reactor root so ALL services (+ their ITs) run in one pass.
+        working-directory: backend-springboot
 
     steps:
       - name: Checkout
@@ -99,7 +100,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-reports
+          # Multi-module: every service publishes its own reports directory.
           path: |
-            backend-springboot/math-wise-backend/target/surefire-reports/
-            backend-springboot/math-wise-backend/target/failsafe-reports/
+            backend-springboot/**/target/surefire-reports/
+            backend-springboot/**/target/failsafe-reports/
           retention-days: 7
