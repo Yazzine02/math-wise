@@ -50,4 +50,4 @@ websockets==16.0
 # `sentence-transformers` brings torch as a transitive dep (~2 GB); a one-time
 # install cost we pay so the embedding model can run fully offline.
 chromadb==0.5.23
-sentence-transformers==3.3.1
+sentence-transformers==5.6.0
